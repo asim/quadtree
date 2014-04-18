@@ -6,8 +6,8 @@ var (
 )
 
 type AABB struct {
-	center Point
-	half   Point
+	center *Point
+	half   *Point
 }
 
 type Point struct {
@@ -17,14 +17,14 @@ type Point struct {
 }
 
 type QuadTree struct {
-	boundary AABB
+	boundary *AABB
 	depth    int
 	points   []*Point
 	parent   *QuadTree
 	nodes    [4]*QuadTree
 }
 
-func New(boundary AABB, depth int, parent *QuadTree) *QuadTree {
+func New(boundary *AABB, depth int, parent *QuadTree) *QuadTree {
 	return &QuadTree{
 		boundary: boundary,
 		depth:    depth,
@@ -32,7 +32,7 @@ func New(boundary AABB, depth int, parent *QuadTree) *QuadTree {
 	}
 }
 
-func NewAABB(center, half Point) *AABB {
+func NewAABB(center, half *Point) *AABB {
 	return &AABB{center, half}
 }
 
@@ -79,26 +79,33 @@ func (qt *QuadTree) divide() {
 		return
 	}
 
-	for i, _ := range qt.nodes {
-		boundary := AABB{
-			Point{
-				qt.boundary.center.x - qt.boundary.half.x/2,
-				qt.boundary.center.y + qt.boundary.half.y/2,
-				nil,
-			},
-			Point{
-				qt.boundary.half.x / 2,
-				qt.boundary.half.y / 2,
-				nil,
-			},
-		}
-
-		qt.nodes[i] = &QuadTree{
-			boundary: boundary,
-			depth:    qt.depth + 1,
-			parent:   qt,
-		}
+	bb := &AABB{
+		&Point{qt.boundary.center.x - qt.boundary.half.x/2, qt.boundary.center.y + qt.boundary.half.y/2, nil},
+		&Point{qt.boundary.half.x / 2, qt.boundary.half.y / 2, nil},
 	}
+
+	qt.nodes[0] = New(bb, qt.depth, qt)
+
+	bb = &AABB{
+		&Point{qt.boundary.center.x + qt.boundary.half.x/2, qt.boundary.center.y + qt.boundary.half.y/2, nil},
+		&Point{qt.boundary.half.x / 2, qt.boundary.half.y / 2, nil},
+	}
+
+	qt.nodes[1] = New(bb, qt.depth, qt)
+
+	bb = &AABB{
+		&Point{qt.boundary.center.x - qt.boundary.half.x/2, qt.boundary.center.y - qt.boundary.half.y/2, nil},
+		&Point{qt.boundary.half.x / 2, qt.boundary.half.y / 2, nil},
+	}
+
+	qt.nodes[2] = New(bb, qt.depth, qt)
+
+	bb = &AABB{
+		&Point{qt.boundary.center.x + qt.boundary.half.x/2, qt.boundary.center.y - qt.boundary.half.y/2, nil},
+		&Point{qt.boundary.half.x / 2, qt.boundary.half.y / 2, nil},
+	}
+
+	qt.nodes[3] = New(bb, qt.depth, qt)
 
 	for _, p := range qt.points {
 		for _, node := range qt.nodes {
@@ -194,9 +201,9 @@ func (qt *QuadTree) Search(a *AABB) []*Point {
 		return results
 	}
 
-	for _, v := range qt.points {
-		if a.ContainsPoint(v) {
-			results = append(results, v)
+	for _, p := range qt.points {
+		if a.ContainsPoint(p) {
+			results = append(results, p)
 		}
 	}
 
