@@ -118,6 +118,49 @@ func (qt *QuadTree) divide() {
 	qt.points = nil
 }
 
+func (qt *QuadTree) knearest(a *AABB, i int, v map[*QuadTree]bool) []*Point {
+	var results []*Point
+
+	if !qt.boundary.Intersect(a) {
+		return results
+	}
+
+	if _, ok := v[qt]; ok {
+		return results
+	} else {
+		v[qt] = true
+	}
+
+	for _, p := range qt.points {
+		if a.ContainsPoint(p) {
+			results = append(results, p)
+		}
+
+		if len(results) >= i {
+			return results[:i]
+		}
+	}
+
+	if qt.nodes[0] != nil {
+		for _, node := range qt.nodes {
+			results = append(results, node.knearest(a, i, v)...)
+
+			if len(results) >= i {
+				return results[:i]
+			}
+		}
+		if len(results) >= i {
+			results = results[:i]
+		}
+	}
+
+	if qt.parent == nil {
+		return results
+	}
+
+	return qt.parent.knearest(a, i, v)
+}
+
 func (qt *QuadTree) Insert(p *Point) bool {
 	if !qt.boundary.ContainsPoint(p) {
 		return false
@@ -144,6 +187,40 @@ func (qt *QuadTree) Insert(p *Point) bool {
 	}
 
 	return false
+}
+
+func (qt *QuadTree) KNearest(a *AABB, i int) []*Point {
+	var results []*Point
+
+	if !qt.boundary.Intersect(a) {
+		return results
+	}
+
+	// hit the leaf
+	if qt.nodes[0] == nil {
+		v := make(map[*QuadTree]bool)
+		results = append(results, qt.knearest(a, i, v)...)
+
+		if len(results) >= i {
+			results = results[:i]
+		}
+
+		return results
+	}
+
+	for _, node := range qt.nodes {
+		results = append(results, node.KNearest(a, i)...)
+
+		if len(results) >= i {
+			return results[:i]
+		}
+	}
+
+	if len(results) >= i {
+		results = results[:i]
+	}
+
+	return results
 }
 
 func (qt *QuadTree) Remove(p *Point) bool {
