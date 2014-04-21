@@ -1,5 +1,9 @@
 package quadtree
 
+import (
+	"math"
+)
+
 var (
 	Capacity = 8
 	MaxDepth = 6
@@ -22,6 +26,43 @@ type QuadTree struct {
 	points   []*Point
 	parent   *QuadTree
 	nodes    [4]*QuadTree
+}
+
+type filter func(*Point) bool
+
+func deg2Rad(deg float64) float64 {
+	return deg * (math.Pi / 180)
+}
+
+func rad2Deg(rad float64) float64 {
+	return (180.0 * rad) / math.Pi
+}
+
+func boundaryPoint(x *Point, m float64) *Point {
+	x2 := deg2Rad(x.x)
+	y2 := deg2Rad(x.y)
+
+	// Radius of Earth at given latitude
+	radius := earthRadius(x2)
+	// Radius of the parallel at given latitude
+	pradius := radius * math.Cos(x2)
+
+	xMax := x2 + m/radius
+	yMax := y2 + m/pradius
+
+	return &Point{rad2Deg(xMax), rad2Deg(yMax), nil}
+}
+
+// Earth radius at a given latitude, according to the WGS-84 ellipsoid [m]
+func earthRadius(x float64) float64 {
+	masm := 6378137.0 // Major semiaxis [m]
+	mism := 6356752.3 // Minor semiaxis [m]
+
+	an := masm * masm * math.Cos(x)
+	bn := mism * mism * math.Sin(x)
+	ad := masm * math.Cos(x)
+	bd := mism * math.Sin(x)
+	return math.Sqrt((an*an + bn*bn) / (ad*ad + bd*bd))
 }
 
 func New(boundary *AABB, depth int, parent *QuadTree) *QuadTree {
@@ -74,6 +115,19 @@ func (a *AABB) Intersect(b *AABB) bool {
 	return true
 }
 
+func (p *Point) Coordinates() (float64, float64) {
+	return p.x, p.y
+}
+
+func (p *Point) Data() interface{} {
+	return p.data
+}
+
+func (p *Point) HalfPoint(m float64) *Point {
+	p2 := boundaryPoint(p, m)
+	return &Point{p2.x - p.x, p2.y - p.y, nil}
+}
+
 func (qt *QuadTree) divide() {
 	if qt.nodes[0] != nil {
 		return
@@ -118,7 +172,7 @@ func (qt *QuadTree) divide() {
 	qt.points = nil
 }
 
-func (qt *QuadTree) knearest(a *AABB, i int, v map[*QuadTree]bool) []*Point {
+func (qt *QuadTree) knearest(a *AABB, i int, v map[*QuadTree]bool, fn filter) []*Point {
 	var results []*Point
 
 	if !qt.boundary.Intersect(a) {
@@ -143,7 +197,7 @@ func (qt *QuadTree) knearest(a *AABB, i int, v map[*QuadTree]bool) []*Point {
 
 	if qt.nodes[0] != nil {
 		for _, node := range qt.nodes {
-			results = append(results, node.knearest(a, i, v)...)
+			results = append(results, node.knearest(a, i, v, fn)...)
 
 			if len(results) >= i {
 				return results[:i]
@@ -158,7 +212,7 @@ func (qt *QuadTree) knearest(a *AABB, i int, v map[*QuadTree]bool) []*Point {
 		return results
 	}
 
-	return qt.parent.knearest(a, i, v)
+	return qt.parent.knearest(a, i, v, fn)
 }
 
 func (qt *QuadTree) Insert(p *Point) bool {
@@ -189,7 +243,7 @@ func (qt *QuadTree) Insert(p *Point) bool {
 	return false
 }
 
-func (qt *QuadTree) KNearest(a *AABB, i int) []*Point {
+func (qt *QuadTree) KNearest(a *AABB, i int, fn filter) []*Point {
 	var results []*Point
 
 	if !qt.boundary.Intersect(a) {
@@ -199,7 +253,7 @@ func (qt *QuadTree) KNearest(a *AABB, i int) []*Point {
 	// hit the leaf
 	if qt.nodes[0] == nil {
 		v := make(map[*QuadTree]bool)
-		results = append(results, qt.knearest(a, i, v)...)
+		results = append(results, qt.knearest(a, i, v, fn)...)
 
 		if len(results) >= i {
 			results = results[:i]
@@ -209,7 +263,7 @@ func (qt *QuadTree) KNearest(a *AABB, i int) []*Point {
 	}
 
 	for _, node := range qt.nodes {
-		results = append(results, node.KNearest(a, i)...)
+		results = append(results, node.KNearest(a, i, fn)...)
 
 		if len(results) >= i {
 			return results[:i]
