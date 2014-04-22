@@ -65,6 +65,9 @@ func earthRadius(x float64) float64 {
 	return math.Sqrt((an*an + bn*bn) / (ad*ad + bd*bd))
 }
 
+// New creates a new *QuadTree. It requires a boundary defining the center
+// and half points, depth at which the QuadTree resides and parent node.
+// Depth of 0 and parent as nil implies the root node.
 func New(boundary *AABB, depth int, parent *QuadTree) *QuadTree {
 	return &QuadTree{
 		boundary: boundary,
@@ -73,14 +76,19 @@ func New(boundary *AABB, depth int, parent *QuadTree) *QuadTree {
 	}
 }
 
+// NewAABB creates an axis aligned bounding box. It takes the center and half
+// point.
 func NewAABB(center, half *Point) *AABB {
 	return &AABB{center, half}
 }
 
+// NewPoint generates a new *Point struct.
 func NewPoint(x, y float64, data interface{}) *Point {
 	return &Point{x, y, data}
 }
 
+// ContainsPoint checks whether the point provided resides within the axis
+// aligned bounding box.
 func (a *AABB) ContainsPoint(p *Point) bool {
 	if p.x < a.center.x-a.half.x {
 		return false
@@ -98,6 +106,7 @@ func (a *AABB) ContainsPoint(p *Point) bool {
 	return true
 }
 
+// Intersect checks whether two axis aligned bounding boxes overlap.
 func (a *AABB) Intersect(b *AABB) bool {
 	if b.center.x+b.half.x < a.center.x-a.half.x {
 		return false
@@ -115,14 +124,19 @@ func (a *AABB) Intersect(b *AABB) bool {
 	return true
 }
 
+// Coordinates return the x and y coordinates of a point.
 func (p *Point) Coordinates() (float64, float64) {
 	return p.x, p.y
 }
 
+// Data returns the data stored within a point.
 func (p *Point) Data() interface{} {
 	return p.data
 }
 
+// HalfPoint is a convenience function for generating the half point
+// required to created an axis aligned bounding box. It takes an
+// argument of metres as float64.
 func (p *Point) HalfPoint(m float64) *Point {
 	p2 := boundaryPoint(p, m)
 	return &Point{p2.x - p.x, p2.y - p.y, nil}
@@ -215,6 +229,10 @@ func (qt *QuadTree) knearest(a *AABB, i int, v map[*QuadTree]bool, fn filter) []
 	return qt.parent.knearest(a, i, v, fn)
 }
 
+// Insert will attempt to insert the point into the QuadTree. It will
+// recursively search until it finds the leaf node. If the leaf node
+// is at capacity then it will try split the node. If the tree is at
+// max depth then point will be stored in the leaf.
 func (qt *QuadTree) Insert(p *Point) bool {
 	if !qt.boundary.ContainsPoint(p) {
 		return false
@@ -243,6 +261,11 @@ func (qt *QuadTree) Insert(p *Point) bool {
 	return false
 }
 
+// KNearest returns the k nearest points within the QuadTree that fall within
+// the bounds of the axis aligned bounding box. A filter function can be used
+// which is evaluated against each point. The search begins at the leaf and
+// recurses towards the parent until k nearest have been found or root node is
+// hit.
 func (qt *QuadTree) KNearest(a *AABB, i int, fn filter) []*Point {
 	var results []*Point
 
@@ -277,6 +300,8 @@ func (qt *QuadTree) KNearest(a *AABB, i int, fn filter) []*Point {
 	return results
 }
 
+// Remove attemps to remove a point from the QuadTree. It will recurse until
+// the leaf node is found and then try to remove the point.
 func (qt *QuadTree) Remove(p *Point) bool {
 	if !qt.boundary.ContainsPoint(p) {
 		return false
@@ -310,6 +335,7 @@ func (qt *QuadTree) Remove(p *Point) bool {
 	return false
 }
 
+// RInsert is used in conjuction with Update to try reveser insert a point.
 func (qt *QuadTree) RInsert(p *Point) bool {
 	// Try insert down the tree
 	if qt.Insert(p) {
@@ -325,6 +351,8 @@ func (qt *QuadTree) RInsert(p *Point) bool {
 	return qt.parent.RInsert(p)
 }
 
+// Search will return all the points within the given axis aligned bounding
+// box. It recursively searches downward through the tree.
 func (qt *QuadTree) Search(a *AABB) []*Point {
 	var results []*Point
 
@@ -349,6 +377,9 @@ func (qt *QuadTree) Search(a *AABB) []*Point {
 	return results
 }
 
+// Update will update the location of a point within the tree. It is
+// optimised to attempt reinsertion within the same node and recurse
+// back up the tree until it finds a suitable node.
 func (qt *QuadTree) Update(p *Point, np *Point) bool {
 	if !qt.boundary.ContainsPoint(p) {
 		return false
