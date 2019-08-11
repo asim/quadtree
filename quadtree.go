@@ -226,7 +226,11 @@ func (qt *QuadTree) knearest(a *AABB, i int, v map[*QuadTree]bool, fn filter) []
 		return results
 	}
 
-	return qt.parent.knearest(a, i, v, fn)
+	results = append(results, qt.parent.knearest(a, i, v, fn)...)
+	if len(results) >= i {
+		results = results[:i]
+	}
+	return results
 }
 
 // Insert will attempt to insert the point into the QuadTree. It will
