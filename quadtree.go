@@ -189,14 +189,14 @@ func (qt *QuadTree) divide() {
 func (qt *QuadTree) knearest(a *AABB, i int, v map[*QuadTree]bool, fn filter) []*Point {
 	var results []*Point
 
-	if !qt.boundary.Intersect(a) {
-		return results
-	}
-
 	if _, ok := v[qt]; ok {
 		return results
 	} else {
 		v[qt] = true
+	}
+
+	if !qt.boundary.Intersect(a) {
+		return results
 	}
 
 	for _, p := range qt.points {
@@ -227,6 +227,7 @@ func (qt *QuadTree) knearest(a *AABB, i int, v map[*QuadTree]bool, fn filter) []
 	}
 
 	results = append(results, qt.parent.knearest(a, i, v, fn)...)
+
 	if len(results) >= i {
 		results = results[:i]
 	}
@@ -270,7 +271,7 @@ func (qt *QuadTree) Insert(p *Point) bool {
 // which is evaluated against each point. The search begins at the leaf and
 // recurses towards the parent until k nearest have been found or root node is
 // hit.
-func (qt *QuadTree) KNearest(a *AABB, i int, fn filter) []*Point {
+func (qt *QuadTree) kNearestRoot(a *AABB, i int, v map[*QuadTree]bool, fn filter) []*Point {
 	var results []*Point
 
 	if !qt.boundary.Intersect(a) {
@@ -279,7 +280,6 @@ func (qt *QuadTree) KNearest(a *AABB, i int, fn filter) []*Point {
 
 	// hit the leaf
 	if qt.nodes[0] == nil {
-		v := make(map[*QuadTree]bool)
 		results = append(results, qt.knearest(a, i, v, fn)...)
 
 		if len(results) >= i {
@@ -290,7 +290,7 @@ func (qt *QuadTree) KNearest(a *AABB, i int, fn filter) []*Point {
 	}
 
 	for _, node := range qt.nodes {
-		results = append(results, node.KNearest(a, i, fn)...)
+		results = append(results, node.kNearestRoot(a, i, v, fn)...)
 
 		if len(results) >= i {
 			return results[:i]
@@ -302,6 +302,11 @@ func (qt *QuadTree) KNearest(a *AABB, i int, fn filter) []*Point {
 	}
 
 	return results
+}
+
+func (qt *QuadTree) KNearest(a *AABB, i int, fn filter) []*Point {
+	v := make(map[*QuadTree]bool)
+	return qt.kNearestRoot(a, i, v, fn)
 }
 
 // Remove attemps to remove a point from the QuadTree. It will recurse until
