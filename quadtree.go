@@ -152,28 +152,28 @@ func (qt *QuadTree) divide() {
 		&Point{qt.boundary.half.x / 2, qt.boundary.half.y / 2, nil},
 	}
 
-	qt.nodes[0] = New(bb, qt.depth, qt)
+	qt.nodes[0] = New(bb, qt.depth+1, qt)
 
 	bb = &AABB{
 		&Point{qt.boundary.center.x + qt.boundary.half.x/2, qt.boundary.center.y + qt.boundary.half.y/2, nil},
 		&Point{qt.boundary.half.x / 2, qt.boundary.half.y / 2, nil},
 	}
 
-	qt.nodes[1] = New(bb, qt.depth, qt)
+	qt.nodes[1] = New(bb, qt.depth+1, qt)
 
 	bb = &AABB{
 		&Point{qt.boundary.center.x - qt.boundary.half.x/2, qt.boundary.center.y - qt.boundary.half.y/2, nil},
 		&Point{qt.boundary.half.x / 2, qt.boundary.half.y / 2, nil},
 	}
 
-	qt.nodes[2] = New(bb, qt.depth, qt)
+	qt.nodes[2] = New(bb, qt.depth+1, qt)
 
 	bb = &AABB{
 		&Point{qt.boundary.center.x + qt.boundary.half.x/2, qt.boundary.center.y - qt.boundary.half.y/2, nil},
 		&Point{qt.boundary.half.x / 2, qt.boundary.half.y / 2, nil},
 	}
 
-	qt.nodes[3] = New(bb, qt.depth, qt)
+	qt.nodes[3] = New(bb, qt.depth+1, qt)
 
 	for _, p := range qt.points {
 		for _, node := range qt.nodes {
