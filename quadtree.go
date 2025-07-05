@@ -2,6 +2,7 @@ package quadtree
 
 import (
 	"math"
+	"sort"
 )
 
 var (
@@ -186,6 +187,12 @@ func (qt *QuadTree) divide() {
 	qt.points = nil
 }
 
+func distance(a, b *Point) float64 {
+	dx := a.x - b.x
+	dy := a.y - b.y
+	return math.Sqrt(dx*dx + dy*dy)
+}
+
 func (qt *QuadTree) knearest(a *AABB, i int, v map[*QuadTree]bool, fn filter) []*Point {
 	var results []*Point
 
@@ -201,34 +208,29 @@ func (qt *QuadTree) knearest(a *AABB, i int, v map[*QuadTree]bool, fn filter) []
 
 	for _, p := range qt.points {
 		if a.ContainsPoint(p) {
-			results = append(results, p)
-		}
-
-		if len(results) >= i {
-			return results[:i]
+			if fn == nil || fn(p) {
+				results = append(results, p)
+			}
 		}
 	}
 
 	if qt.nodes[0] != nil {
 		for _, node := range qt.nodes {
 			results = append(results, node.knearest(a, i, v, fn)...)
-
-			if len(results) >= i {
-				return results[:i]
-			}
-		}
-		if len(results) >= i {
-			results = results[:i]
 		}
 	}
 
-	if qt.parent == nil {
-		return results
+	if qt.parent != nil {
+		results = append(results, qt.parent.knearest(a, i, v, fn)...)
 	}
 
-	results = append(results, qt.parent.knearest(a, i, v, fn)...)
+	// Sort by distance to the center of the query AABB
+	center := a.center
+	sort.Slice(results, func(i, j int) bool {
+		return distance(results[i], center) < distance(results[j], center)
+	})
 
-	if len(results) >= i {
+	if len(results) > i {
 		results = results[:i]
 	}
 	return results
