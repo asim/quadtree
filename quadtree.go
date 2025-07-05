@@ -224,16 +224,26 @@ func (qt *QuadTree) knearest(a *AABB, i int, v map[*QuadTree]bool, fn filter) []
 		results = append(results, qt.parent.knearest(a, i, v, fn)...)
 	}
 
+	// Deduplicate points
+	unique := make(map[*Point]struct{})
+	var deduped []*Point
+	for _, p := range results {
+		if _, seen := unique[p]; !seen {
+			unique[p] = struct{}{}
+			deduped = append(deduped, p)
+		}
+	}
+
 	// Sort by distance to the center of the query AABB
 	center := a.center
-	sort.Slice(results, func(i, j int) bool {
-		return distance(results[i], center) < distance(results[j], center)
+	sort.Slice(deduped, func(i, j int) bool {
+		return distance(deduped[i], center) < distance(deduped[j], center)
 	})
 
-	if len(results) > i {
-		results = results[:i]
+	if len(deduped) > i {
+		deduped = deduped[:i]
 	}
-	return results
+	return deduped
 }
 
 // Insert will attempt to insert the point into the QuadTree. It will

@@ -26,7 +26,7 @@ if !qtree.Insert(point) {
 }
 ```
 
-Find the k-nearest points 
+Find the k-nearest points (results are sorted by distance to the query center, and duplicates are removed):
 
 ```go
 center := quadtree.NewPoint(lat, lng, nil)
@@ -37,5 +37,9 @@ maxPoints := 10
 for _, point := range qtree.KNearest(bounds, maxPoints, nil) {
   log.Printf("Found point: %s\n", point.Data().(string))
 }
-
 ```
+
+## Notes
+- `KNearest` returns up to `k` points, sorted by Euclidean distance to the query center.
+- Duplicate points are removed from the result.
+- The distance metric is Euclidean (straight-line). For geospatial data, you may want to adapt this to use Haversine or another metric if needed.
