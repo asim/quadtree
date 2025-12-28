@@ -2,11 +2,15 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"strconv"
 	"sync"
+	"syscall"
 
 	"github.com/asim/quadtree"
 )
@@ -17,6 +21,7 @@ var (
 	pointToID   = make(map[*quadtree.Point]string)
 	mu          sync.RWMutex
 	idCounter   int
+	store       quadtree.Store
 )
 
 type PointRequest struct {
@@ -46,6 +51,44 @@ func init() {
 }
 
 func main() {
+	// Parse command-line flags
+	storeType := flag.String("store", "memory", "Store type: memory or file")
+	storeFile := flag.String("store-file", "quadtree.json", "File path for file store")
+	flag.Parse()
+
+	// Initialize store based on type
+	var err error
+	switch *storeType {
+	case "file":
+		store, err = quadtree.NewFileStore(*storeFile)
+		if err != nil {
+			log.Fatalf("Failed to initialize file store: %v", err)
+		}
+		log.Printf("Using file store: %s", *storeFile)
+	case "memory":
+		store = quadtree.NewMemoryStore()
+		log.Printf("Using memory store")
+	default:
+		log.Fatalf("Unknown store type: %s", *storeType)
+	}
+
+	// Load existing points from store
+	if err := loadPointsFromStore(); err != nil {
+		log.Fatalf("Failed to load points from store: %v", err)
+	}
+
+	// Handle graceful shutdown
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-sigChan
+		log.Println("Shutting down server...")
+		if err := store.Close(); err != nil {
+			log.Printf("Error closing store: %v", err)
+		}
+		os.Exit(0)
+	}()
+
 	// API endpoints
 	http.HandleFunc("/api/points", handlePoints)
 	http.HandleFunc("/api/points/", handlePointByID)
@@ -57,6 +100,32 @@ func main() {
 	port := ":8080"
 	log.Printf("Starting server on %s", port)
 	log.Fatal(http.ListenAndServe(port, nil))
+}
+
+// loadPointsFromStore loads all points from the store and rebuilds the quadtree
+func loadPointsFromStore() error {
+	storedPoints, err := store.List()
+	if err != nil {
+		return err
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	for id, point := range storedPoints {
+		if tree.Insert(point) {
+			points[id] = point
+			pointToID[point] = id
+			
+			// Update idCounter to be higher than any loaded ID
+			if idNum, err := strconv.Atoi(id); err == nil && idNum > idCounter {
+				idCounter = idNum
+			}
+		}
+	}
+
+	log.Printf("Loaded %d points from store", len(storedPoints))
+	return nil
 }
 
 func handlePoints(w http.ResponseWriter, r *http.Request) {
@@ -90,6 +159,11 @@ func addPoint(w http.ResponseWriter, r *http.Request) {
 	
 	points[id] = point
 	pointToID[point] = id
+	
+	// Save to store
+	if err := store.Save(id, point); err != nil {
+		log.Printf("Warning: Failed to save point to store: %v", err)
+	}
 	mu.Unlock()
 
 	resp := PointResponse{
@@ -200,6 +274,11 @@ func updatePoint(w http.ResponseWriter, r *http.Request, id string) {
 	// Update mappings
 	points[id] = newPoint
 	pointToID[newPoint] = id
+	
+	// Save to store
+	if err := store.Save(id, newPoint); err != nil {
+		log.Printf("Warning: Failed to save updated point to store: %v", err)
+	}
 
 	resp := PointResponse{
 		ID:   id,
@@ -229,6 +308,12 @@ func deletePoint(w http.ResponseWriter, r *http.Request, id string) {
 
 	delete(points, id)
 	delete(pointToID, point)
+	
+	// Delete from store
+	if err := store.Delete(id); err != nil {
+		log.Printf("Warning: Failed to delete point from store: %v", err)
+	}
+	
 	w.WriteHeader(http.StatusNoContent)
 }
 

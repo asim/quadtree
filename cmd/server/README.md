@@ -10,15 +10,47 @@ A web-based HTTP server with REST API and interactive UI for managing and visual
 - **Visual navigation** - mouse drag and arrow keys
 - **Zoom support** - mouse wheel to zoom in/out
 - **Regional search** - find points within a specific area
+- **Persistent storage** - memory or file-based storage options
 
 ## Running the Server
+
+### Memory Store (Default)
+Points are stored in memory and will be lost when the server stops.
 
 ```bash
 cd cmd/server
 go run main.go
 ```
 
+### File Store
+Points are persisted to a JSON file and automatically loaded on startup.
+
+```bash
+cd cmd/server
+go run main.go -store=file -store-file=quadtree.json
+```
+
 The server will start on `http://localhost:8080`
+
+### Command-line Options
+
+- `-store` - Storage type: `memory` (default) or `file`
+- `-store-file` - File path for file store (default: `quadtree.json`)
+
+## Storage Options
+
+### Memory Store
+- Fast, in-memory storage
+- No persistence - data lost on restart
+- Ideal for development and testing
+
+### File Store
+- Persists points to a JSON file
+- Automatically loads on startup and saves on shutdown
+- Data survives server restarts
+- Graceful shutdown handling (Ctrl+C)
+
+The file store saves points as a flat JSON map and rebuilds the quadtree on startup, ensuring efficient spatial queries while maintaining persistence.
 
 ## API Endpoints
 

@@ -19,6 +19,9 @@ func setupTestServer() {
 	points = make(map[string]*quadtree.Point)
 	pointToID = make(map[*quadtree.Point]string)
 	idCounter = 0
+	
+	// Initialize memory store for tests
+	store = quadtree.NewMemoryStore()
 }
 
 func TestAddPoint(t *testing.T) {
