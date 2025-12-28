@@ -378,19 +378,20 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             height: 100vh;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
         }
         header {
             background: #f5f5f5;
-            padding: 1rem 2rem;
+            padding: 1rem;
             border-bottom: 2px solid #ddd;
         }
         h1 { font-size: 1.5rem; margin-bottom: 0.5rem; color: #333; }
         .controls {
             display: flex;
-            gap: 1rem;
+            gap: 0.5rem;
             flex-wrap: wrap;
             align-items: center;
-            margin-top: 1rem;
+            margin-top: 0.5rem;
         }
         .control-group {
             display: flex;
@@ -398,20 +399,28 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             gap: 0.5rem;
         }
         input, button {
-            padding: 0.5rem;
+            padding: 0.6rem;
             border-radius: 4px;
             border: 1px solid #ccc;
             background: #fff;
             color: #333;
             font-size: 0.9rem;
+            min-height: 44px;
+        }
+        input {
+            width: 80px;
+        }
+        input[type="text"] {
+            width: 120px;
         }
         button {
             cursor: pointer;
             background: #0066cc;
             border-color: #0066cc;
             color: #fff;
+            white-space: nowrap;
         }
-        button:hover { background: #0052a3; }
+        button:hover, button:active { background: #0052a3; }
         .main-content {
             display: flex;
             flex: 1;
@@ -421,11 +430,13 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             flex: 1;
             position: relative;
             overflow: hidden;
+            min-height: 300px;
         }
         canvas {
             display: block;
             cursor: move;
             background: #ffffff;
+            touch-action: none;
         }
         .sidebar {
             width: 300px;
@@ -465,9 +476,10 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
         .point-delete {
             background: #cc0000;
             border: none;
-            padding: 0.25rem 0.5rem;
+            padding: 0.4rem 0.6rem;
             font-size: 0.75rem;
             color: #fff;
+            min-height: 36px;
         }
         .status {
             position: fixed;
@@ -478,6 +490,81 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             border-radius: 4px;
             border: 1px solid #ddd;
             font-size: 0.85rem;
+            z-index: 1000;
+        }
+        
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+            header {
+                padding: 0.75rem;
+            }
+            h1 { 
+                font-size: 1.2rem; 
+                margin-bottom: 0.5rem;
+            }
+            .controls {
+                gap: 0.5rem;
+            }
+            .control-group {
+                flex: 1 1 auto;
+                min-width: 140px;
+            }
+            .control-group label {
+                font-size: 0.85rem;
+            }
+            input, button {
+                font-size: 0.85rem;
+                padding: 0.5rem;
+            }
+            input {
+                width: 70px;
+                flex: 1;
+            }
+            input[type="text"] {
+                width: 100%;
+            }
+            button {
+                flex: 1 1 auto;
+                min-width: 100px;
+            }
+            .main-content {
+                flex-direction: column;
+            }
+            .canvas-container {
+                min-height: 50vh;
+                flex: 0 0 50vh;
+            }
+            .sidebar {
+                width: 100%;
+                border-left: none;
+                border-top: 2px solid #ddd;
+                flex: 1;
+                overflow-y: auto;
+            }
+            .status {
+                bottom: 0.5rem;
+                right: 0.5rem;
+                left: 0.5rem;
+                font-size: 0.75rem;
+                padding: 0.4rem 0.6rem;
+                text-align: center;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1rem;
+            }
+            .control-group {
+                flex: 1 1 100%;
+            }
+            button {
+                width: 100%;
+            }
+            .canvas-container {
+                min-height: 40vh;
+                flex: 0 0 40vh;
+            }
         }
     </style>
 </head>
@@ -667,6 +754,57 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             zoom *= zoomFactor;
             zoom = Math.max(0.1, Math.min(zoom, 100));
             draw();
+        });
+        
+        // Touch controls
+        let touchStartDistance = 0;
+        let touchStartZoom = 1;
+        
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (e.touches.length === 1) {
+                isDragging = true;
+                lastMouseX = e.touches[0].clientX;
+                lastMouseY = e.touches[0].clientY;
+            } else if (e.touches.length === 2) {
+                isDragging = false;
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                touchStartDistance = Math.sqrt(dx * dx + dy * dy);
+                touchStartZoom = zoom;
+            }
+        });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (e.touches.length === 1 && isDragging) {
+                const dx = e.touches[0].clientX - lastMouseX;
+                const dy = e.touches[0].clientY - lastMouseY;
+                viewX -= dx / zoom;
+                viewY += dy / zoom;
+                lastMouseX = e.touches[0].clientX;
+                lastMouseY = e.touches[0].clientY;
+                draw();
+            } else if (e.touches.length === 2) {
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                if (touchStartDistance > 0) {
+                    zoom = touchStartZoom * (distance / touchStartDistance);
+                    zoom = Math.max(0.1, Math.min(zoom, 100));
+                    draw();
+                }
+            }
+        });
+        
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            if (e.touches.length === 0) {
+                isDragging = false;
+            } else if (e.touches.length === 1) {
+                lastMouseX = e.touches[0].clientX;
+                lastMouseY = e.touches[0].clientY;
+            }
         });
         
         // Keyboard controls
