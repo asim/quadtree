@@ -17,6 +17,7 @@ func setupTestServer() {
 	bounds := quadtree.NewAABB(center, half)
 	tree = quadtree.New(bounds, 0, nil)
 	points = make(map[string]*quadtree.Point)
+	pointToID = make(map[*quadtree.Point]string)
 	idCounter = 0
 }
 
@@ -60,6 +61,8 @@ func TestGetAllPoints(t *testing.T) {
 	tree.Insert(p2)
 	points["1"] = p1
 	points["2"] = p2
+	pointToID[p1] = "1"
+	pointToID[p2] = "2"
 	idCounter = 2
 
 	req := httptest.NewRequest(http.MethodGet, "/api/points", nil)
@@ -85,6 +88,7 @@ func TestGetPoint(t *testing.T) {
 	p := quadtree.NewPoint(10.0, 20.0, "Test Point")
 	tree.Insert(p)
 	points["1"] = p
+	pointToID[p] = "1"
 	idCounter = 1
 
 	req := httptest.NewRequest(http.MethodGet, "/api/points/1", nil)
@@ -110,6 +114,7 @@ func TestDeletePoint(t *testing.T) {
 	p := quadtree.NewPoint(10.0, 20.0, "Test Point")
 	tree.Insert(p)
 	points["1"] = p
+	pointToID[p] = "1"
 	idCounter = 1
 
 	req := httptest.NewRequest(http.MethodDelete, "/api/points/1", nil)
@@ -123,6 +128,10 @@ func TestDeletePoint(t *testing.T) {
 
 	if len(points) != 0 {
 		t.Errorf("Expected 0 points after deletion, got %d", len(points))
+	}
+
+	if len(pointToID) != 0 {
+		t.Errorf("Expected 0 entries in pointToID after deletion, got %d", len(pointToID))
 	}
 }
 
@@ -139,6 +148,9 @@ func TestSearch(t *testing.T) {
 	points["1"] = p1
 	points["2"] = p2
 	points["3"] = p3
+	pointToID[p1] = "1"
+	pointToID[p2] = "2"
+	pointToID[p3] = "3"
 	idCounter = 3
 
 	// Search for points near origin
@@ -179,6 +191,7 @@ func TestUpdatePoint(t *testing.T) {
 	p := quadtree.NewPoint(10.0, 20.0, "Original")
 	tree.Insert(p)
 	points["1"] = p
+	pointToID[p] = "1"
 	idCounter = 1
 
 	updateReq := PointRequest{X: 15.0, Y: 25.0, Data: "Updated"}
@@ -199,6 +212,10 @@ func TestUpdatePoint(t *testing.T) {
 
 	if resp.X != 15.0 || resp.Y != 25.0 {
 		t.Errorf("Expected coordinates (15.0, 25.0), got (%f, %f)", resp.X, resp.Y)
+	}
+
+	if resp.Data != "Updated" {
+		t.Errorf("Expected data 'Updated', got '%v'", resp.Data)
 	}
 }
 

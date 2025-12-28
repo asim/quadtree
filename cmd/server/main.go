@@ -12,10 +12,11 @@ import (
 )
 
 var (
-	tree     *quadtree.QuadTree
-	points   = make(map[string]*quadtree.Point)
-	mu       sync.RWMutex
-	idCounter int
+	tree        *quadtree.QuadTree
+	points      = make(map[string]*quadtree.Point)
+	pointToID   = make(map[*quadtree.Point]string)
+	mu          sync.RWMutex
+	idCounter   int
 )
 
 type PointRequest struct {
@@ -90,6 +91,7 @@ func addPoint(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	points[id] = point
+	pointToID[point] = id
 	mu.Unlock()
 
 	resp := PointResponse{
@@ -174,33 +176,38 @@ func updatePoint(w http.ResponseWriter, r *http.Request, id string) {
 	mu.Lock()
 	defer mu.Unlock()
 
-	point, exists := points[id]
+	oldPoint, exists := points[id]
 	if !exists {
 		http.Error(w, "Point not found", http.StatusNotFound)
 		return
 	}
 
-	newPoint := quadtree.NewPoint(req.X, req.Y, nil)
-	if !tree.Update(point, newPoint) {
-		http.Error(w, "Failed to update point", http.StatusBadRequest)
+	// Remove old point from tree and reverse map
+	if !tree.Remove(oldPoint) {
+		http.Error(w, "Failed to remove old point", http.StatusInternalServerError)
+		return
+	}
+	delete(pointToID, oldPoint)
+
+	// Create and insert new point with updated coordinates and data
+	newPoint := quadtree.NewPoint(req.X, req.Y, req.Data)
+	if !tree.Insert(newPoint) {
+		// Try to restore old point if new insertion fails
+		tree.Insert(oldPoint)
+		pointToID[oldPoint] = id
+		http.Error(w, "Failed to insert updated point", http.StatusBadRequest)
 		return
 	}
 
-	// Update data if provided
-	if req.Data != nil {
-		// We need to access the internal data field, but it's private
-		// For now, we'll recreate the point with the new data
-		tree.Remove(point)
-		point = quadtree.NewPoint(req.X, req.Y, req.Data)
-		tree.Insert(point)
-		points[id] = point
-	}
+	// Update mappings
+	points[id] = newPoint
+	pointToID[newPoint] = id
 
 	resp := PointResponse{
 		ID:   id,
 		X:    req.X,
 		Y:    req.Y,
-		Data: point.Data(),
+		Data: req.Data,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -223,6 +230,7 @@ func deletePoint(w http.ResponseWriter, r *http.Request, id string) {
 	}
 
 	delete(points, id)
+	delete(pointToID, point)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -243,21 +251,11 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 	half := quadtree.NewPoint(req.HalfX, req.HalfY, nil)
 	bounds := quadtree.NewAABB(center, half)
 	results := tree.Search(bounds)
-	mu.RUnlock()
 
 	responses := make([]PointResponse, 0)
-	// Find IDs for returned points
-	mu.RLock()
 	for _, point := range results {
 		x, y := point.Coordinates()
-		// Find the ID for this point
-		var pointID string
-		for id, p := range points {
-			if p == point {
-				pointID = id
-				break
-			}
-		}
+		pointID := pointToID[point]
 		responses = append(responses, PointResponse{
 			ID:   pointID,
 			X:    x,
