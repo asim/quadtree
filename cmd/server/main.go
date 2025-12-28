@@ -789,9 +789,11 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
                 const dx = e.touches[0].clientX - e.touches[1].clientX;
                 const dy = e.touches[0].clientY - e.touches[1].clientY;
                 const distance = Math.sqrt(dx * dx + dy * dy);
-                zoom = touchStartZoom * (distance / touchStartDistance);
-                zoom = Math.max(0.1, Math.min(zoom, 100));
-                draw();
+                if (touchStartDistance > 0) {
+                    zoom = touchStartZoom * (distance / touchStartDistance);
+                    zoom = Math.max(0.1, Math.min(zoom, 100));
+                    draw();
+                }
             }
         });
         
