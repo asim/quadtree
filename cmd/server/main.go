@@ -107,7 +107,7 @@ func getAllPoints(w http.ResponseWriter, r *http.Request) {
 	mu.RLock()
 	defer mu.RUnlock()
 
-	var responses []PointResponse
+	responses := make([]PointResponse, 0)
 	for id, point := range points {
 		x, y := point.Coordinates()
 		responses = append(responses, PointResponse{
@@ -245,7 +245,7 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 	results := tree.Search(bounds)
 	mu.RUnlock()
 
-	var responses []PointResponse
+	responses := make([]PointResponse, 0)
 	// Find IDs for returned points
 	mu.RLock()
 	for _, point := range results {
