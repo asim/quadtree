@@ -65,6 +65,7 @@ func main() {
 	queryLat, queryLng := 50.0, 10.0
 	queryCenter := quadtree.NewPoint(queryLat, queryLng, nil)
 	// Create a search radius of approximately 10,000 km
+	// HalfPoint method calculates geographic distance using WGS-84 ellipsoid
 	queryDistance := 10000000.0 // meters
 	queryBounds := quadtree.NewAABB(queryCenter, queryCenter.HalfPoint(queryDistance))
 
