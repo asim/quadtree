@@ -155,10 +155,8 @@ func TestSearch(t *testing.T) {
 
 	// Search for points near origin
 	searchReq := SearchRequest{
-		CenterX: 0.0,
-		CenterY: 0.0,
-		HalfX:   10.0,
-		HalfY:   10.0,
+		Center: []float64{0.0, 0.0},
+		Radius: 10.0,
 	}
 	body, _ := json.Marshal(searchReq)
 

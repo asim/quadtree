@@ -89,14 +89,12 @@ POST /api/search
 Content-Type: application/json
 
 {
-  "centerX": 0.0,
-  "centerY": 0.0,
-  "halfX": 10.0,
-  "halfY": 10.0
+  "center": [0.0, 0.0],
+  "radius": 10.0
 }
 ```
 
-Returns all points within the bounding box defined by center ± half.
+Returns all points within the bounding box defined by center ± radius.
 
 ## Web UI
 
@@ -151,7 +149,7 @@ curl -X POST http://localhost:8080/api/points \
 ```bash
 curl -X POST http://localhost:8080/api/search \
   -H "Content-Type: application/json" \
-  -d '{"centerX": 50.0, "centerY": 10.0, "halfX": 5.0, "halfY": 5.0}'
+  -d '{"center": [50.0, 10.0], "radius": 5.0}'
 ```
 
 ### Delete a point

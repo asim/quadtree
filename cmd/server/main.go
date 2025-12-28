@@ -33,10 +33,8 @@ type PointResponse struct {
 }
 
 type SearchRequest struct {
-	CenterX float64 `json:"centerX"`
-	CenterY float64 `json:"centerY"`
-	HalfX   float64 `json:"halfX"`
-	HalfY   float64 `json:"halfY"`
+	Center []float64 `json:"center"`
+	Radius float64   `json:"radius"`
 }
 
 func init() {
@@ -246,9 +244,14 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(req.Center) != 2 {
+		http.Error(w, "Center must be an array of two values [x, y]", http.StatusBadRequest)
+		return
+	}
+
 	mu.RLock()
-	center := quadtree.NewPoint(req.CenterX, req.CenterY, nil)
-	half := quadtree.NewPoint(req.HalfX, req.HalfY, nil)
+	center := quadtree.NewPoint(req.Center[0], req.Center[1], nil)
+	half := quadtree.NewPoint(req.Radius, req.Radius, nil)
 	bounds := quadtree.NewAABB(center, half)
 	results := tree.Search(bounds)
 
@@ -285,18 +288,18 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #1a1a1a;
-            color: #fff;
+            background: #ffffff;
+            color: #333;
             height: 100vh;
             display: flex;
             flex-direction: column;
         }
         header {
-            background: #2d2d2d;
+            background: #f5f5f5;
             padding: 1rem 2rem;
-            border-bottom: 2px solid #3d3d3d;
+            border-bottom: 2px solid #ddd;
         }
-        h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+        h1 { font-size: 1.5rem; margin-bottom: 0.5rem; color: #333; }
         .controls {
             display: flex;
             gap: 1rem;
@@ -312,15 +315,16 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
         input, button {
             padding: 0.5rem;
             border-radius: 4px;
-            border: 1px solid #4d4d4d;
-            background: #2d2d2d;
-            color: #fff;
+            border: 1px solid #ccc;
+            background: #fff;
+            color: #333;
             font-size: 0.9rem;
         }
         button {
             cursor: pointer;
             background: #0066cc;
             border-color: #0066cc;
+            color: #fff;
         }
         button:hover { background: #0052a3; }
         .main-content {
@@ -336,12 +340,12 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
         canvas {
             display: block;
             cursor: move;
-            background: #0a0a0a;
+            background: #ffffff;
         }
         .sidebar {
             width: 300px;
-            background: #2d2d2d;
-            border-left: 2px solid #3d3d3d;
+            background: #f5f5f5;
+            border-left: 2px solid #ddd;
             padding: 1rem;
             overflow-y: auto;
         }
@@ -354,14 +358,15 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             color: #0066cc;
         }
         .info-item {
-            background: #1a1a1a;
+            background: #fff;
             padding: 0.5rem;
             margin-bottom: 0.5rem;
             border-radius: 4px;
             font-size: 0.85rem;
+            border: 1px solid #e0e0e0;
         }
         .point-item {
-            background: #1a1a1a;
+            background: #fff;
             padding: 0.75rem;
             margin-bottom: 0.5rem;
             border-radius: 4px;
@@ -369,6 +374,7 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border: 1px solid #e0e0e0;
         }
         .point-info { flex: 1; }
         .point-delete {
@@ -376,15 +382,16 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             border: none;
             padding: 0.25rem 0.5rem;
             font-size: 0.75rem;
+            color: #fff;
         }
         .status {
             position: fixed;
             bottom: 1rem;
             right: 1rem;
-            background: #2d2d2d;
+            background: #f5f5f5;
             padding: 0.5rem 1rem;
             border-radius: 4px;
-            border: 1px solid #4d4d4d;
+            border: 1px solid #ddd;
             font-size: 0.85rem;
         }
     </style>
@@ -477,11 +484,11 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
         }
         
         function draw() {
-            ctx.fillStyle = '#0a0a0a';
+            ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
             // Draw grid
-            ctx.strokeStyle = '#1a1a1a';
+            ctx.strokeStyle = '#e0e0e0';
             ctx.lineWidth = 1;
             
             const gridSize = 10 / zoom;
@@ -507,7 +514,7 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             }
             
             // Draw axes
-            ctx.strokeStyle = '#4d4d4d';
+            ctx.strokeStyle = '#999';
             ctx.lineWidth = 2;
             const origin = worldToScreen(0, 0);
             ctx.beginPath();
@@ -533,7 +540,7 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
                     ctx.fill();
                     
                     if (point.data) {
-                        ctx.fillStyle = '#fff';
+                        ctx.fillStyle = '#333';
                         ctx.font = '12px sans-serif';
                         ctx.fillText(point.data, screen.x + 8, screen.y - 8);
                     }
@@ -661,10 +668,8 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        centerX: viewX,
-                        centerY: viewY,
-                        halfX: radius,
-                        halfY: radius
+                        center: [viewX, viewY],
+                        radius: radius
                     })
                 });
                 
