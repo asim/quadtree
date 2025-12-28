@@ -382,10 +382,10 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
         }
         header {
             background: #f5f5f5;
-            padding: 1rem;
+            padding: 0.75rem;
             border-bottom: 2px solid #ddd;
         }
-        h1 { font-size: 1.5rem; margin-bottom: 0.5rem; color: #333; }
+        h1 { font-size: 1.25rem; margin-bottom: 0.5rem; color: #333; }
         .controls {
             display: flex;
             gap: 0.5rem;
@@ -396,22 +396,22 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
         .control-group {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.3rem;
         }
         input, button {
-            padding: 0.6rem;
+            padding: 0.4rem 0.5rem;
             border-radius: 4px;
             border: 1px solid #ccc;
             background: #fff;
             color: #333;
-            font-size: 0.9rem;
-            min-height: 44px;
+            font-size: 0.85rem;
+            min-height: 36px;
         }
         input {
-            width: 80px;
+            width: 60px;
         }
         input[type="text"] {
-            width: 120px;
+            width: 100px;
         }
         button {
             cursor: pointer;
@@ -491,6 +491,10 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             border: 1px solid #ddd;
             font-size: 0.85rem;
             z-index: 1000;
+            display: none;
+        }
+        .status.visible {
+            display: block;
         }
         
         /* Mobile Responsive Styles */
@@ -833,8 +837,11 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
         function setStatus(message, duration = 3000) {
             const status = document.getElementById('status');
             status.textContent = message;
+            status.classList.add('visible');
             if (duration > 0) {
-                setTimeout(() => status.textContent = 'Ready', duration);
+                setTimeout(() => {
+                    status.classList.remove('visible');
+                }, duration);
             }
         }
         
