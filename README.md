@@ -39,6 +39,20 @@ for _, point := range qtree.KNearest(bounds, maxPoints, nil) {
 }
 ```
 
+## Examples
+
+For complete, runnable examples, see the [examples directory](./examples):
+
+- **[simple.go](./examples/simple.go)** - A minimal example demonstrating basic quadtree operations (insert, search, k-nearest)
+- **[basic.go](./examples/basic.go)** - A comprehensive example with real-world city coordinates, filtering, updates, and removals
+
+Run any example with:
+
+```bash
+cd examples
+go run simple.go
+```
+
 ## Notes
 - `KNearest` returns up to `k` points, sorted by Euclidean distance to the query center.
 - Duplicate points are removed from the result.
