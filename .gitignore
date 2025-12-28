@@ -1,0 +1,16 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+quadtree-server
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Go workspace file
+go.work
