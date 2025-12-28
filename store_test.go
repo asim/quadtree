@@ -1,7 +1,6 @@
 package quadtree
 
 import (
-	"os"
 	"testing"
 )
 
@@ -65,8 +64,8 @@ func TestMemoryStore(t *testing.T) {
 }
 
 func TestFileStore(t *testing.T) {
-	filename := "/tmp/quadtree_test.json"
-	defer os.Remove(filename)
+	tempDir := t.TempDir()
+	filename := tempDir + "/quadtree_test.json"
 	
 	// Test new file store
 	store, err := NewFileStore(filename)
@@ -141,8 +140,8 @@ func TestFileStore(t *testing.T) {
 }
 
 func TestFileStoreDataPreservation(t *testing.T) {
-	filename := "/tmp/quadtree_test_data.json"
-	defer os.Remove(filename)
+	tempDir := t.TempDir()
+	filename := tempDir + "/quadtree_test_data.json"
 	
 	store, err := NewFileStore(filename)
 	if err != nil {

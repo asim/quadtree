@@ -2,7 +2,6 @@ package quadtree
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"sync"
 )
@@ -171,7 +170,7 @@ func (s *FileStore) Close() error {
 
 // load reads the points from the file
 func (s *FileStore) load() error {
-	data, err := ioutil.ReadFile(s.filename)
+	data, err := os.ReadFile(s.filename)
 	if err != nil {
 		return err
 	}
@@ -192,5 +191,5 @@ func (s *FileStore) persist() error {
 		return err
 	}
 	
-	return ioutil.WriteFile(s.filename, data, 0644)
+	return os.WriteFile(s.filename, data, 0644)
 }
