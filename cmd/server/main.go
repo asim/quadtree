@@ -372,9 +372,9 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #ffffff;
-            color: #333;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: #f8f9fa;
+            color: #1a202c;
             height: 100vh;
             display: flex;
             flex-direction: column;
@@ -382,70 +382,105 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
         }
         .hamburger {
             display: none;
-            position: fixed;
-            top: 1rem;
-            left: 1rem;
-            z-index: 2000;
-            background: #0066cc;
+            background: transparent;
             border: none;
-            color: white;
-            font-size: 1.5rem;
-            width: 44px;
-            height: 44px;
-            border-radius: 4px;
+            color: #4a5568;
+            font-size: 1.25rem;
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
             cursor: pointer;
             align-items: center;
             justify-content: center;
+            transition: all 0.2s;
         }
         .hamburger:hover {
-            background: #0052a3;
+            background: #e2e8f0;
+            color: #1a202c;
         }
         header {
-            background: #f5f5f5;
-            padding: 0.75rem;
-            border-bottom: 2px solid #ddd;
+            background: #ffffff;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
         }
-        h1 { font-size: 1.25rem; margin-bottom: 0.5rem; color: #333; }
+        .header-top {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+        h1 { 
+            font-size: 1.125rem; 
+            font-weight: 600;
+            margin: 0; 
+            color: #1a202c; 
+            flex: 1;
+            letter-spacing: -0.01em;
+        }
         .controls {
             display: flex;
             gap: 0.5rem;
             flex-wrap: wrap;
             align-items: center;
-            margin-top: 0.5rem;
         }
         .control-group {
             display: flex;
             align-items: center;
-            gap: 0.3rem;
+            gap: 0.5rem;
+        }
+        .control-group span {
+            font-size: 0.875rem;
+            color: #718096;
+            font-weight: 500;
         }
         .xy-inputs {
             display: flex;
-            gap: 0.3rem;
+            gap: 0.5rem;
         }
         input, button {
-            padding: 0.4rem 0.5rem;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            background: #fff;
-            color: #333;
-            font-size: 0.85rem;
-            min-height: 36px;
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+            color: #1a202c;
+            font-size: 0.875rem;
+            min-height: 38px;
+            transition: all 0.2s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+        }
+        input::placeholder {
+            color: #a0aec0;
         }
         input {
-            width: 60px;
+            width: 70px;
         }
         input[type="text"] {
-            width: 120px;
+            width: 140px;
+        }
+        #searchRadius {
+            width: 80px;
         }
         button {
             cursor: pointer;
-            background: #0066cc;
-            border-color: #0066cc;
-            color: #fff;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            color: #4a5568;
             white-space: nowrap;
-            padding: 0.4rem 0.8rem;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
         }
-        button:hover, button:active { background: #0052a3; }
+        button:hover {
+            background: #f7fafc;
+            border-color: #cbd5e0;
+        }
+        button:active {
+            background: #edf2f7;
+        }
         .main-content {
             display: flex;
             flex: 1;
@@ -456,6 +491,7 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             position: relative;
             overflow: hidden;
             min-height: 300px;
+            background: #ffffff;
         }
         canvas {
             display: block;
@@ -464,10 +500,10 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             touch-action: none;
         }
         .sidebar {
-            width: 300px;
-            background: #f5f5f5;
-            border-left: 2px solid #ddd;
-            padding: 1rem;
+            width: 320px;
+            background: #ffffff;
+            border-left: 1px solid #e2e8f0;
+            padding: 1.5rem;
             overflow-y: auto;
         }
         .sidebar-header {
@@ -480,49 +516,75 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             margin-bottom: 1.5rem;
         }
         .info-section h3 {
-            font-size: 1rem;
-            margin-bottom: 0.5rem;
-            color: #0066cc;
+            font-size: 0.75rem;
+            margin-bottom: 0.75rem;
+            color: #718096;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.05em;
         }
         .info-item {
-            background: #fff;
-            padding: 0.5rem;
-            margin-bottom: 0.5rem;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            border: 1px solid #e0e0e0;
-        }
-        .point-item {
-            background: #fff;
+            background: #f7fafc;
             padding: 0.75rem;
             margin-bottom: 0.5rem;
-            border-radius: 4px;
-            font-size: 0.85rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            border: 1px solid #e2e8f0;
+        }
+        .info-item div {
+            line-height: 1.6;
+            color: #4a5568;
+        }
+        .point-item {
+            background: #ffffff;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border: 1px solid #e0e0e0;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s;
         }
-        .point-info { flex: 1; }
+        .point-item:hover {
+            border-color: #cbd5e0;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+        .point-info { 
+            flex: 1;
+            color: #4a5568;
+        }
+        .point-info strong {
+            color: #1a202c;
+            font-weight: 600;
+        }
         .point-delete {
-            background: #cc0000;
-            border: none;
-            padding: 0.4rem 0.6rem;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            padding: 0.375rem 0.75rem;
             font-size: 0.75rem;
-            color: #fff;
-            min-height: 36px;
+            color: #e53e3e;
+            min-height: 32px;
+            font-weight: 500;
+        }
+        .point-delete:hover {
+            background: #fff5f5;
+            border-color: #fc8181;
+            color: #c53030;
         }
         .status {
             position: fixed;
             bottom: 1rem;
             right: 1rem;
-            background: #f5f5f5;
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            border: 1px solid #ddd;
-            font-size: 0.85rem;
+            background: #1a202c;
+            color: #ffffff;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
             z-index: 1000;
             display: none;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
         .status.visible {
             display: block;
@@ -532,17 +594,19 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
         @media (max-width: 768px) {
             body {
                 overflow: auto;
+                background: #ffffff;
             }
             .hamburger {
                 display: flex;
             }
             header {
-                padding: 0.75rem;
-                padding-left: 4rem;
+                padding: 1rem;
+            }
+            .header-top {
+                margin-bottom: 0;
             }
             h1 { 
-                font-size: 1.2rem; 
-                margin-bottom: 0;
+                font-size: 1rem;
             }
             header .controls {
                 display: none;
@@ -561,7 +625,6 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             .sidebar {
                 width: 100%;
                 border-left: none;
-                border-top: 2px solid #ddd;
                 flex: none;
                 position: fixed;
                 top: 0;
@@ -569,7 +632,7 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
                 height: 100vh;
                 z-index: 1500;
                 transition: right 0.3s ease;
-                box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+                box-shadow: -4px 0 6px -1px rgba(0, 0, 0, 0.1);
             }
             .sidebar.open {
                 right: 0;
@@ -578,26 +641,32 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                margin-bottom: 1rem;
-                padding-bottom: 0.75rem;
-                border-bottom: 2px solid #ddd;
+                margin-bottom: 1.5rem;
+                padding-bottom: 1rem;
+                border-bottom: 1px solid #e2e8f0;
             }
             .sidebar-header h2 {
-                font-size: 1.1rem;
-                color: #0066cc;
+                font-size: 1rem;
+                color: #1a202c;
+                font-weight: 600;
             }
             .close-sidebar {
                 display: flex;
-                background: #cc0000;
-                border: none;
-                color: white;
-                font-size: 1.2rem;
-                width: 36px;
-                height: 36px;
-                border-radius: 4px;
+                background: #ffffff;
+                border: 1px solid #e2e8f0;
+                color: #718096;
+                font-size: 1.25rem;
+                width: 32px;
+                height: 32px;
+                border-radius: 6px;
                 cursor: pointer;
                 align-items: center;
                 justify-content: center;
+            }
+            .close-sidebar:hover {
+                background: #fff5f5;
+                border-color: #fc8181;
+                color: #e53e3e;
             }
             .sidebar::before {
                 content: '';
@@ -614,6 +683,14 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
                 flex-direction: column;
                 align-items: stretch;
                 width: 100%;
+                gap: 0.5rem;
+            }
+            .sidebar .control-group span {
+                font-size: 0.75rem;
+                color: #718096;
+                text-transform: uppercase;
+                font-weight: 600;
+                letter-spacing: 0.05em;
             }
             .sidebar .xy-inputs {
                 display: flex;
@@ -624,33 +701,34 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             }
             .sidebar input {
                 width: 100%;
-                font-size: 0.9rem;
-                padding: 0.6rem;
+                font-size: 0.875rem;
+                padding: 0.625rem 0.75rem;
             }
             .sidebar input[type="text"] {
                 width: 100%;
             }
             .sidebar button {
                 width: 100%;
-                padding: 0.6rem 1rem;
-                font-size: 0.9rem;
+                padding: 0.625rem 1rem;
+                font-size: 0.875rem;
             }
             .status {
-                bottom: 0.5rem;
-                right: 0.5rem;
-                left: 0.5rem;
-                font-size: 0.75rem;
-                padding: 0.4rem 0.6rem;
+                bottom: 1rem;
+                right: 1rem;
+                left: 1rem;
+                font-size: 0.875rem;
+                padding: 0.75rem 1rem;
                 text-align: center;
             }
         }
     </style>
 </head>
 <body>
-    <button class="hamburger" onclick="toggleSidebar()" aria-label="Toggle menu">☰</button>
-    
     <header>
-        <h1>🗺️ QuadTree Viewer</h1>
+        <div class="header-top">
+            <button class="hamburger" onclick="toggleSidebar()" aria-label="Toggle menu">☰</button>
+            <h1>🗺️ QuadTree Viewer</h1>
+        </div>
         <div class="controls">
             <div class="xy-inputs">
                 <input type="number" id="addX" step="any" placeholder="X">
@@ -768,35 +846,9 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Draw grid
-            ctx.strokeStyle = '#e0e0e0';
-            ctx.lineWidth = 1;
-            
-            const gridSize = 10 / zoom;
-            const startX = Math.floor((viewX - canvas.width / 2 / zoom) / gridSize) * gridSize;
-            const startY = Math.floor((viewY - canvas.height / 2 / zoom) / gridSize) * gridSize;
-            const endX = viewX + canvas.width / 2 / zoom;
-            const endY = viewY + canvas.height / 2 / zoom;
-            
-            for (let x = startX; x <= endX; x += gridSize) {
-                const screen = worldToScreen(x, 0);
-                ctx.beginPath();
-                ctx.moveTo(screen.x, 0);
-                ctx.lineTo(screen.x, canvas.height);
-                ctx.stroke();
-            }
-            
-            for (let y = startY; y <= endY; y += gridSize) {
-                const screen = worldToScreen(0, y);
-                ctx.beginPath();
-                ctx.moveTo(0, screen.y);
-                ctx.lineTo(canvas.width, screen.y);
-                ctx.stroke();
-            }
-            
             // Draw axes
-            ctx.strokeStyle = '#999';
-            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
             const origin = worldToScreen(0, 0);
             ctx.beginPath();
             ctx.moveTo(origin.x, 0);
@@ -815,14 +867,14 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
                 if (screen.x >= -20 && screen.x <= canvas.width + 20 &&
                     screen.y >= -20 && screen.y <= canvas.height + 20) {
                     
-                    ctx.fillStyle = '#00cc66';
+                    ctx.fillStyle = '#4299e1';
                     ctx.beginPath();
                     ctx.arc(screen.x, screen.y, 5, 0, 2 * Math.PI);
                     ctx.fill();
                     
                     if (point.data) {
-                        ctx.fillStyle = '#333';
-                        ctx.font = '12px sans-serif';
+                        ctx.fillStyle = '#2d3748';
+                        ctx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
                         ctx.fillText(point.data, screen.x + 8, screen.y - 8);
                     }
                 }
@@ -951,12 +1003,20 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
         }
         
         async function addPoint() {
-            const x = parseFloat(document.getElementById('addX').value);
-            const y = parseFloat(document.getElementById('addY').value);
+            const xValue = document.getElementById('addX').value;
+            const yValue = document.getElementById('addY').value;
             const data = document.getElementById('addData').value;
             
+            if (!xValue || !yValue) {
+                setStatus('❌ Please enter X and Y coordinates');
+                return;
+            }
+            
+            const x = parseFloat(xValue);
+            const y = parseFloat(yValue);
+            
             if (isNaN(x) || isNaN(y)) {
-                setStatus('❌ Invalid coordinates');
+                setStatus('❌ Invalid coordinates - must be numbers');
                 return;
             }
             
@@ -1053,6 +1113,11 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
                     updatePointsList();
                     draw();
                     setStatus('✓ Loaded ' + points.length + ' points');
+                    
+                    // Close sidebar on mobile after loading
+                    if (isMobile()) {
+                        toggleSidebar();
+                    }
                 } else {
                     setStatus('❌ Failed to load points');
                 }
