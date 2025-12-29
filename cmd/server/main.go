@@ -384,7 +384,7 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             display: none;
             position: fixed;
             top: 1rem;
-            right: 1rem;
+            left: 1rem;
             z-index: 2000;
             background: #0066cc;
             border: none;
@@ -470,6 +470,12 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             padding: 1rem;
             overflow-y: auto;
         }
+        .sidebar-header {
+            display: none;
+        }
+        .close-sidebar {
+            display: none;
+        }
         .info-section {
             margin-bottom: 1.5rem;
         }
@@ -532,13 +538,13 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             }
             header {
                 padding: 0.75rem;
-                padding-right: 4rem;
+                padding-left: 4rem;
             }
             h1 { 
                 font-size: 1.2rem; 
                 margin-bottom: 0;
             }
-            .controls {
+            header .controls {
                 display: none;
             }
             .main-content {
@@ -581,6 +587,7 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
                 color: #0066cc;
             }
             .close-sidebar {
+                display: flex;
                 background: #cc0000;
                 border: none;
                 color: white;
@@ -589,15 +596,19 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
                 height: 36px;
                 border-radius: 4px;
                 cursor: pointer;
-                display: flex;
                 align-items: center;
                 justify-content: center;
+            }
+            .sidebar::before {
+                content: '';
+                display: block;
             }
             .sidebar .controls {
                 display: flex;
                 flex-direction: column;
                 gap: 0.75rem;
                 margin-bottom: 1.5rem;
+                align-items: stretch;
             }
             .sidebar .control-group {
                 flex-direction: column;
@@ -620,8 +631,7 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
                 width: 100%;
             }
             .sidebar button {
-                width: auto;
-                min-width: auto;
+                width: 100%;
                 padding: 0.6rem 1rem;
                 font-size: 0.9rem;
             }
@@ -643,15 +653,15 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
         <h1>🗺️ QuadTree Viewer</h1>
         <div class="controls">
             <div class="xy-inputs">
-                <input type="number" id="addX" step="any" value="0" placeholder="X">
-                <input type="number" id="addY" step="any" value="0" placeholder="Y">
+                <input type="number" id="addX" step="any" placeholder="X">
+                <input type="number" id="addY" step="any" placeholder="Y">
             </div>
-            <input type="text" id="addData" placeholder="Point label">
+            <input type="text" id="addData" placeholder="Label">
             <button onclick="addPoint()">Add Point</button>
             
             <div class="control-group">
                 <span>Search</span>
-                <input type="number" id="searchRadius" value="10" step="1" min="1" placeholder="Radius">
+                <input type="number" id="searchRadius" step="1" min="1" placeholder="Radius">
             </div>
             <button onclick="search()">Search Region</button>
             <button onclick="loadAllPoints()">Reload All</button>
@@ -667,23 +677,6 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             <div class="sidebar-header">
                 <h2>Controls & Points</h2>
                 <button class="close-sidebar" onclick="toggleSidebar()" aria-label="Close menu">×</button>
-            </div>
-            
-            <div class="controls">
-                <div class="control-group">
-                    <div class="xy-inputs">
-                        <input type="number" id="addXMobile" step="any" value="0" placeholder="X coordinate">
-                        <input type="number" id="addYMobile" step="any" value="0" placeholder="Y coordinate">
-                    </div>
-                </div>
-                <input type="text" id="addDataMobile" placeholder="Point label (optional)">
-                <button onclick="addPointMobile()">Add Point</button>
-                
-                <div class="control-group">
-                    <input type="number" id="searchRadiusMobile" value="10" step="1" min="1" placeholder="Search radius">
-                </div>
-                <button onclick="searchMobile()">Search Region</button>
-                <button onclick="loadAllPoints()">Reload All</button>
             </div>
             
             <div class="info-section">
@@ -721,24 +714,29 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             sidebar.classList.toggle('open');
         }
         
-        function addPointMobile() {
-            const x = parseFloat(document.getElementById('addXMobile').value);
-            const y = parseFloat(document.getElementById('addYMobile').value);
-            const data = document.getElementById('addDataMobile').value;
-            
-            if (isNaN(x) || isNaN(y)) {
-                setStatus('❌ Invalid coordinates');
-                return;
-            }
-            
-            addPointAPI(x, y, data);
-            toggleSidebar();
+        function isMobile() {
+            return window.innerWidth <= 768;
         }
         
-        function searchMobile() {
-            const radius = parseFloat(document.getElementById('searchRadiusMobile').value);
-            searchAPI(radius);
-            toggleSidebar();
+        function moveControlsToSidebar() {
+            if (isMobile()) {
+                const controls = document.querySelector('header .controls');
+                const sidebar = document.getElementById('sidebar');
+                const sidebarHeader = sidebar.querySelector('.sidebar-header');
+                
+                // Only move if not already in sidebar
+                if (!sidebar.contains(controls)) {
+                    sidebar.insertBefore(controls, sidebarHeader.nextSibling);
+                }
+            } else {
+                const controls = document.querySelector('.controls');
+                const header = document.querySelector('header');
+                
+                // Move back to header if in sidebar
+                if (!header.contains(controls)) {
+                    header.appendChild(controls);
+                }
+            }
         }
         
         function resizeCanvas() {
@@ -746,6 +744,7 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             canvas.width = container.clientWidth;
             canvas.height = container.clientHeight;
             draw();
+            moveControlsToSidebar();
         }
         
         window.addEventListener('resize', resizeCanvas);
@@ -961,7 +960,12 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
                 return;
             }
             
-            addPointAPI(x, y, data);
+            await addPointAPI(x, y, data);
+            
+            // Close sidebar on mobile after adding point
+            if (isMobile()) {
+                toggleSidebar();
+            }
         }
         
         async function addPointAPI(x, y, data) {
@@ -1001,8 +1005,20 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
         }
         
         async function search() {
-            const radius = parseFloat(document.getElementById('searchRadius').value);
-            searchAPI(radius);
+            const radiusValue = document.getElementById('searchRadius').value;
+            const radius = parseFloat(radiusValue);
+            
+            if (!radiusValue || isNaN(radius) || radius <= 0) {
+                setStatus('❌ Please enter a valid radius');
+                return;
+            }
+            
+            await searchAPI(radius);
+            
+            // Close sidebar on mobile after search
+            if (isMobile()) {
+                toggleSidebar();
+            }
         }
         
         async function searchAPI(radius) {
