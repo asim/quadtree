@@ -43,6 +43,8 @@ for _, point := range qtree.KNearest(bounds, maxPoints, nil) {
 
 A web-based HTTP server with REST API and interactive UI is available for managing and visualizing points.
 
+![QuadTree Viewer](https://github.com/user-attachments/assets/f7f3f3a6-ff29-4a7e-86ed-9dccd579e067)
+
 ```bash
 cd cmd/server
 go run main.go
@@ -53,6 +55,7 @@ Visit `http://localhost:8080` in your browser for an interactive grid visualizat
 - Visual point management with mouse/keyboard navigation
 - Regional search functionality
 - Real-time updates
+- Responsive mobile-first design
 
 See [cmd/server/README.md](./cmd/server/README.md) for full API documentation and usage.
 
