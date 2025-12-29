@@ -380,6 +380,26 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             flex-direction: column;
             overflow: hidden;
         }
+        .hamburger {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 2000;
+            background: #0066cc;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            width: 44px;
+            height: 44px;
+            border-radius: 4px;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+        }
+        .hamburger:hover {
+            background: #0052a3;
+        }
         header {
             background: #f5f5f5;
             padding: 0.75rem;
@@ -398,6 +418,10 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             align-items: center;
             gap: 0.3rem;
         }
+        .xy-inputs {
+            display: flex;
+            gap: 0.3rem;
+        }
         input, button {
             padding: 0.4rem 0.5rem;
             border-radius: 4px;
@@ -411,7 +435,7 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             width: 60px;
         }
         input[type="text"] {
-            width: 100px;
+            width: 120px;
         }
         button {
             cursor: pointer;
@@ -419,6 +443,7 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             border-color: #0066cc;
             color: #fff;
             white-space: nowrap;
+            padding: 0.4rem 0.8rem;
         }
         button:hover, button:active { background: #0052a3; }
         .main-content {
@@ -499,51 +524,106 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
         
         /* Mobile Responsive Styles */
         @media (max-width: 768px) {
+            body {
+                overflow: auto;
+            }
+            .hamburger {
+                display: flex;
+            }
             header {
                 padding: 0.75rem;
+                padding-right: 4rem;
             }
             h1 { 
                 font-size: 1.2rem; 
-                margin-bottom: 0.5rem;
+                margin-bottom: 0;
             }
             .controls {
-                gap: 0.5rem;
-            }
-            .control-group {
-                flex: 1 1 auto;
-                min-width: 140px;
-            }
-            .control-group label {
-                font-size: 0.85rem;
-            }
-            input, button {
-                font-size: 0.85rem;
-                padding: 0.5rem;
-            }
-            input {
-                width: 70px;
-                flex: 1;
-            }
-            input[type="text"] {
-                width: 100%;
-            }
-            button {
-                flex: 1 1 auto;
-                min-width: 100px;
+                display: none;
             }
             .main-content {
                 flex-direction: column;
+                overflow: visible;
+                height: auto;
+                min-height: 100vh;
             }
             .canvas-container {
-                min-height: 50vh;
-                flex: 0 0 50vh;
+                min-height: 60vh;
+                height: 60vh;
+                flex: none;
             }
             .sidebar {
                 width: 100%;
                 border-left: none;
                 border-top: 2px solid #ddd;
+                flex: none;
+                position: fixed;
+                top: 0;
+                right: -100%;
+                height: 100vh;
+                z-index: 1500;
+                transition: right 0.3s ease;
+                box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+            }
+            .sidebar.open {
+                right: 0;
+            }
+            .sidebar-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 1rem;
+                padding-bottom: 0.75rem;
+                border-bottom: 2px solid #ddd;
+            }
+            .sidebar-header h2 {
+                font-size: 1.1rem;
+                color: #0066cc;
+            }
+            .close-sidebar {
+                background: #cc0000;
+                border: none;
+                color: white;
+                font-size: 1.2rem;
+                width: 36px;
+                height: 36px;
+                border-radius: 4px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .sidebar .controls {
+                display: flex;
+                flex-direction: column;
+                gap: 0.75rem;
+                margin-bottom: 1.5rem;
+            }
+            .sidebar .control-group {
+                flex-direction: column;
+                align-items: stretch;
+                width: 100%;
+            }
+            .sidebar .xy-inputs {
+                display: flex;
+                gap: 0.5rem;
+            }
+            .sidebar .xy-inputs input {
                 flex: 1;
-                overflow-y: auto;
+            }
+            .sidebar input {
+                width: 100%;
+                font-size: 0.9rem;
+                padding: 0.6rem;
+            }
+            .sidebar input[type="text"] {
+                width: 100%;
+            }
+            .sidebar button {
+                width: auto;
+                min-width: auto;
+                padding: 0.6rem 1rem;
+                font-size: 0.9rem;
             }
             .status {
                 bottom: 0.5rem;
@@ -554,45 +634,24 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
                 text-align: center;
             }
         }
-        
-        @media (max-width: 480px) {
-            h1 {
-                font-size: 1rem;
-            }
-            .control-group {
-                flex: 1 1 100%;
-            }
-            button {
-                width: 100%;
-            }
-            .canvas-container {
-                min-height: 40vh;
-                flex: 0 0 40vh;
-            }
-        }
     </style>
 </head>
 <body>
+    <button class="hamburger" onclick="toggleSidebar()" aria-label="Toggle menu">☰</button>
+    
     <header>
         <h1>🗺️ QuadTree Viewer</h1>
         <div class="controls">
-            <div class="control-group">
-                <label>X:</label>
-                <input type="number" id="addX" step="any" value="0">
+            <div class="xy-inputs">
+                <input type="number" id="addX" step="any" value="0" placeholder="X">
+                <input type="number" id="addY" step="any" value="0" placeholder="Y">
             </div>
-            <div class="control-group">
-                <label>Y:</label>
-                <input type="number" id="addY" step="any" value="0">
-            </div>
-            <div class="control-group">
-                <label>Label:</label>
-                <input type="text" id="addData" placeholder="Point label">
-            </div>
+            <input type="text" id="addData" placeholder="Point label">
             <button onclick="addPoint()">Add Point</button>
             
-            <div class="control-group" style="margin-left: 2rem;">
-                <label>Search Size:</label>
-                <input type="number" id="searchRadius" value="10" step="1" min="1">
+            <div class="control-group">
+                <span>Search</span>
+                <input type="number" id="searchRadius" value="10" step="1" min="1" placeholder="Radius">
             </div>
             <button onclick="search()">Search Region</button>
             <button onclick="loadAllPoints()">Reload All</button>
@@ -604,7 +663,29 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             <canvas id="canvas"></canvas>
         </div>
         
-        <div class="sidebar">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>Controls & Points</h2>
+                <button class="close-sidebar" onclick="toggleSidebar()" aria-label="Close menu">×</button>
+            </div>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <div class="xy-inputs">
+                        <input type="number" id="addXMobile" step="any" value="0" placeholder="X coordinate">
+                        <input type="number" id="addYMobile" step="any" value="0" placeholder="Y coordinate">
+                    </div>
+                </div>
+                <input type="text" id="addDataMobile" placeholder="Point label (optional)">
+                <button onclick="addPointMobile()">Add Point</button>
+                
+                <div class="control-group">
+                    <input type="number" id="searchRadiusMobile" value="10" step="1" min="1" placeholder="Search radius">
+                </div>
+                <button onclick="searchMobile()">Search Region</button>
+                <button onclick="loadAllPoints()">Reload All</button>
+            </div>
+            
             <div class="info-section">
                 <h3>Current Location</h3>
                 <div class="info-item">
@@ -634,6 +715,31 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
         let isDragging = false;
         let lastMouseX = 0;
         let lastMouseY = 0;
+        
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('open');
+        }
+        
+        function addPointMobile() {
+            const x = parseFloat(document.getElementById('addXMobile').value);
+            const y = parseFloat(document.getElementById('addYMobile').value);
+            const data = document.getElementById('addDataMobile').value;
+            
+            if (isNaN(x) || isNaN(y)) {
+                setStatus('❌ Invalid coordinates');
+                return;
+            }
+            
+            addPointAPI(x, y, data);
+            toggleSidebar();
+        }
+        
+        function searchMobile() {
+            const radius = parseFloat(document.getElementById('searchRadiusMobile').value);
+            searchAPI(radius);
+            toggleSidebar();
+        }
         
         function resizeCanvas() {
             const container = canvas.parentElement;
@@ -855,6 +961,10 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
                 return;
             }
             
+            addPointAPI(x, y, data);
+        }
+        
+        async function addPointAPI(x, y, data) {
             try {
                 const response = await fetch('/api/points', {
                     method: 'POST',
@@ -892,7 +1002,10 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
         
         async function search() {
             const radius = parseFloat(document.getElementById('searchRadius').value);
-            
+            searchAPI(radius);
+        }
+        
+        async function searchAPI(radius) {
             try {
                 const response = await fetch('/api/search', {
                     method: 'POST',
