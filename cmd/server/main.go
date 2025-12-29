@@ -590,17 +590,74 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             display: block;
         }
         
+        /* Floating zoom controls */
+        .zoom-controls {
+            display: none;
+            position: absolute;
+            bottom: 1rem;
+            right: 1rem;
+            flex-direction: column;
+            gap: 0.5rem;
+            z-index: 100;
+        }
+        .zoom-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #4a5568;
+            padding: 0;
+            min-height: 44px;
+        }
+        .zoom-btn:hover {
+            background: #f7fafc;
+        }
+        .zoom-btn:active {
+            background: #edf2f7;
+            transform: scale(0.95);
+        }
+        
+        /* Overlay for mobile sidebar */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1400;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .sidebar-overlay.visible {
+            opacity: 1;
+        }
+        
         /* Mobile Responsive Styles */
         @media (max-width: 768px) {
+            html, body {
+                height: 100%;
+                overflow: hidden;
+                position: fixed;
+                width: 100%;
+            }
             body {
-                overflow: auto;
                 background: #ffffff;
             }
             .hamburger {
                 display: flex;
             }
             header {
-                padding: 1rem;
+                padding: 0.75rem 1rem;
+                flex-shrink: 0;
             }
             .header-top {
                 margin-bottom: 0;
@@ -612,27 +669,43 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
                 display: none;
             }
             .main-content {
-                flex-direction: column;
-                overflow: visible;
-                height: auto;
-                min-height: 100vh;
+                flex: 1;
+                overflow: hidden;
+                position: relative;
             }
             .canvas-container {
-                min-height: 60vh;
-                height: 60vh;
-                flex: none;
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                min-height: unset;
+                height: 100%;
+            }
+            .zoom-controls {
+                display: flex;
+            }
+            .sidebar-overlay {
+                display: block;
+                pointer-events: none;
+            }
+            .sidebar-overlay.visible {
+                pointer-events: auto;
             }
             .sidebar {
-                width: 100%;
+                width: 85%;
+                max-width: 320px;
                 border-left: none;
                 flex: none;
                 position: fixed;
                 top: 0;
                 right: -100%;
-                height: 100vh;
+                height: 100%;
                 z-index: 1500;
                 transition: right 0.3s ease;
                 box-shadow: -4px 0 6px -1px rgba(0, 0, 0, 0.1);
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
             }
             .sidebar.open {
                 right: 0;
@@ -668,14 +741,10 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
                 border-color: #fc8181;
                 color: #e53e3e;
             }
-            .sidebar::before {
-                content: '';
-                display: block;
-            }
             .sidebar .controls {
                 display: flex;
                 flex-direction: column;
-                gap: 0.5rem;
+                gap: 0.75rem;
                 margin-bottom: 1.5rem;
                 align-items: stretch;
             }
@@ -715,25 +784,47 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             }
             .sidebar input {
                 width: 100%;
-                font-size: 0.875rem;
-                padding: 0.5rem 0.625rem;
+                font-size: 16px; /* Prevents iOS zoom on focus */
+                padding: 0.625rem;
+                min-height: 44px;
             }
             .sidebar input[type="text"] {
                 width: 100%;
             }
             .sidebar button {
-                width: auto;
-                padding: 0.5rem 0.75rem;
+                width: 100%;
+                padding: 0.625rem 0.75rem;
                 font-size: 0.875rem;
-                white-space: nowrap;
+                min-height: 44px;
             }
             .status {
-                bottom: 1rem;
+                bottom: 5rem;
                 right: 1rem;
                 left: 1rem;
                 font-size: 0.875rem;
                 padding: 0.75rem 1rem;
                 text-align: center;
+            }
+            .point-item {
+                padding: 1rem 0.75rem;
+            }
+            .point-delete {
+                min-height: 36px;
+                padding: 0.5rem 0.75rem;
+            }
+        }
+        
+        /* Extra small screens */
+        @media (max-width: 375px) {
+            header {
+                padding: 0.5rem 0.75rem;
+            }
+            h1 {
+                font-size: 0.9rem;
+            }
+            .sidebar {
+                width: 100%;
+                max-width: none;
             }
         }
     </style>
@@ -764,9 +855,16 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
         </div>
     </header>
     
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    
     <div class="main-content">
         <div class="canvas-container">
             <canvas id="canvas"></canvas>
+            <div class="zoom-controls">
+                <button class="zoom-btn" onclick="zoomIn()" aria-label="Zoom in">+</button>
+                <button class="zoom-btn" onclick="zoomOut()" aria-label="Zoom out">−</button>
+                <button class="zoom-btn" onclick="resetView()" aria-label="Reset view">⌂</button>
+            </div>
         </div>
         
         <div class="sidebar" id="sidebar">
@@ -807,7 +905,32 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
         
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('open');
+            const overlay = document.getElementById('sidebarOverlay');
+            const isOpen = sidebar.classList.toggle('open');
+            if (isOpen) {
+                overlay.classList.add('visible');
+            } else {
+                overlay.classList.remove('visible');
+            }
+        }
+        
+        function zoomIn() {
+            zoom *= 1.3;
+            zoom = Math.min(zoom, 100);
+            draw();
+        }
+        
+        function zoomOut() {
+            zoom *= 0.7;
+            zoom = Math.max(zoom, 0.1);
+            draw();
+        }
+        
+        function resetView() {
+            viewX = 0;
+            viewY = 0;
+            zoom = 1;
+            draw();
         }
         
         function isMobile() {
@@ -1131,11 +1254,6 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
                     updatePointsList();
                     draw();
                     setStatus('✓ Loaded ' + points.length + ' points');
-                    
-                    // Close sidebar on mobile after loading
-                    if (isMobile()) {
-                        toggleSidebar();
-                    }
                 } else {
                     setStatus('❌ Failed to load points');
                 }
