@@ -680,13 +680,31 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
                 align-items: stretch;
             }
             .sidebar .control-group {
-                flex-direction: row;
-                align-items: center;
+                flex-direction: column;
+                align-items: stretch;
                 width: 100%;
-                gap: 0.5rem;
+                gap: 0.375rem;
+            }
+            .sidebar .control-group.add-point-group span,
+            .sidebar .control-group.search-group span {
+                display: block;
+                font-size: 0.75rem;
+                color: #718096;
+                text-transform: uppercase;
+                font-weight: 600;
+                letter-spacing: 0.05em;
             }
             .sidebar .control-group span {
                 display: none;
+            }
+            .sidebar .search-group {
+                flex-direction: row;
+                align-items: center;
+                gap: 0.5rem;
+            }
+            .sidebar .search-group span {
+                display: block;
+                min-width: fit-content;
             }
             .sidebar .xy-inputs {
                 display: flex;
@@ -727,14 +745,17 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             <h1>🗺️ QuadTree Viewer</h1>
         </div>
         <div class="controls">
-            <div class="xy-inputs">
-                <input type="number" id="addX" step="any" placeholder="X">
-                <input type="number" id="addY" step="any" placeholder="Y">
+            <div class="control-group add-point-group">
+                <span>Add Point</span>
+                <div class="xy-inputs">
+                    <input type="number" id="addX" step="any" placeholder="X">
+                    <input type="number" id="addY" step="any" placeholder="Y">
+                </div>
             </div>
             <input type="text" id="addData" placeholder="Label">
             <button onclick="addPoint()">Add Point</button>
             
-            <div class="control-group">
+            <div class="control-group search-group">
                 <span>Search</span>
                 <input type="number" id="searchRadius" step="1" min="1" placeholder="Radius">
             </div>
