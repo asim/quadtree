@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="quadtree.css">
+    <style>{{.ExtraCSS}}</style>
+</head>
+<body>
+    <header>
+        <div class="header-top">
+            <button class="hamburger" onclick="toggleSidebar()" aria-label="Toggle menu">☰</button>
+            <h1>🗺️ {{.Title}}</h1>
+        </div>
+        {{if not .ReadOnly}}
+        <div class="controls">
+            {{if .ShowAddPoint}}
+            <div class="control-group add-point-group">
+                <span>Add {{.PointLabel}}</span>
+                <div class="xy-inputs">
+                    <input type="number" id="addX" step="any" placeholder="X">
+                    <input type="number" id="addY" step="any" placeholder="Y">
+                </div>
+            </div>
+            <input type="text" id="addData" placeholder="Label">
+            <button onclick="addPoint()">Add {{.PointLabel}}</button>
+            {{end}}
+            
+            {{if .ShowSearch}}
+            <div class="control-group search-group">
+                <span>Search</span>
+                <input type="number" id="searchRadius" step="1" min="1" placeholder="Radius">
+            </div>
+            <button onclick="search()">Search Region</button>
+            {{end}}
+            <button onclick="loadAllPoints()">Reload All</button>
+        </div>
+        {{end}}
+    </header>
+    
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    
+    <div class="main-content">
+        <div class="canvas-container">
+            <canvas id="canvas"></canvas>
+            <div class="zoom-controls">
+                <button class="zoom-btn" onclick="zoomIn()" aria-label="Zoom in">+</button>
+                <button class="zoom-btn" onclick="zoomOut()" aria-label="Zoom out">−</button>
+                <button class="zoom-btn" onclick="resetView()" aria-label="Reset view">⌂</button>
+            </div>
+        </div>
+        
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>Controls & {{.PointLabel}}s</h2>
+                <button class="close-sidebar" onclick="toggleSidebar()" aria-label="Close menu">Close</button>
+            </div>
+            
+            {{if not .ReadOnly}}
+            <div class="controls">
+                {{if .ShowAddPoint}}
+                <div class="control-group add-point-group">
+                    <span>Add {{.PointLabel}}</span>
+                    <div class="xy-inputs">
+                        <input type="number" id="addXSidebar" step="any" placeholder="X">
+                        <input type="number" id="addYSidebar" step="any" placeholder="Y">
+                    </div>
+                </div>
+                <input type="text" id="addDataSidebar" placeholder="Label">
+                <button onclick="addPointSidebar()">Add {{.PointLabel}}</button>
+                {{end}}
+                
+                {{if .ShowSearch}}
+                <div class="control-group search-group">
+                    <span>Search</span>
+                    <input type="number" id="searchRadiusSidebar" step="1" min="1" placeholder="Radius">
+                </div>
+                <button onclick="searchSidebar()">Search Region</button>
+                {{end}}
+                <button onclick="loadAllPoints()">Reload All</button>
+            </div>
+            {{end}}
+            
+            <div class="info-section">
+                <h3>Current Location</h3>
+                <div class="info-item">
+                    <div>X: <span id="currentX">0.00</span></div>
+                    <div>Y: <span id="currentY">0.00</span></div>
+                    <div>Zoom: <span id="currentZoom">1.00</span>x</div>
+                </div>
+            </div>
+            
+            <div class="info-section">
+                <h3>Visible {{.PointLabel}}s (<span id="pointCount">0</span>)</h3>
+                <div id="pointsList"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="status" id="status">Ready</div>
+
+    <script>
+        // Configuration from server
+        const config = {
+            apiBase: '{{.APIBase}}',
+            pointsEndpoint: '{{.PointsEndpoint}}',
+            searchEndpoint: '{{.SearchEndpoint}}',
+            showAddPoint: {{.ShowAddPoint}},
+            showSearch: {{.ShowSearch}},
+            showDelete: {{.ShowDelete}},
+            readOnly: {{.ReadOnly}},
+            pointLabel: '{{.PointLabel}}'
+        };
+    </script>
+    <script src="quadtree.js"></script>
+    <script>{{.ExtraJS}}</script>
+</body>
+</html>
