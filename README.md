@@ -59,6 +59,40 @@ Visit `http://localhost:8080` in your browser for an interactive grid visualizat
 
 See [cmd/server/README.md](./cmd/server/README.md) for full API documentation and usage.
 
+## Reusable UI Package
+
+The visualization UI is available as a separate package for embedding in other applications:
+
+```go
+import "github.com/asim/quadtree/ui"
+
+// Default config for point editor with full controls
+http.Handle("/", ui.Handler(ui.DefaultConfig()))
+
+// Read-only network view (e.g., for agent visualization)
+http.Handle("/network", ui.Handler(ui.NetworkConfig()))
+
+// Custom configuration
+cfg := ui.Config{
+    Title:          "My Spatial View",
+    APIBase:        "/api",
+    PointsEndpoint: "/items",
+    SearchEndpoint: "/search",
+    ShowAddPoint:   false,
+    ShowDelete:     false,
+    ReadOnly:       true,
+    PointLabel:     "Item",
+}
+http.Handle("/view", ui.Handler(cfg))
+```
+
+The UI supports:
+- Pan/zoom with mouse, touch, and keyboard
+- Grid overlay with dynamic scaling
+- Point display with optional radius circles
+- Mobile-responsive design
+- Configurable controls and labels
+
 ## Examples
 
 For complete, runnable examples, see the [examples directory](./examples):
