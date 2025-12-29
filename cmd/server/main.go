@@ -798,12 +798,12 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
         
         function moveControlsToSidebar() {
             if (isMobile()) {
-                const controls = document.querySelector('header .controls');
+                const controls = document.querySelector('.controls');
                 const sidebar = document.getElementById('sidebar');
                 const sidebarHeader = sidebar.querySelector('.sidebar-header');
                 
                 // Only move if not already in sidebar
-                if (!sidebar.contains(controls)) {
+                if (controls && !sidebar.contains(controls)) {
                     sidebar.insertBefore(controls, sidebarHeader.nextSibling);
                 }
             } else {
@@ -811,7 +811,7 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
                 const header = document.querySelector('header');
                 
                 // Move back to header if in sidebar
-                if (!header.contains(controls)) {
+                if (controls && !header.contains(controls)) {
                     header.appendChild(controls);
                 }
             }
@@ -1007,7 +1007,7 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             const yValue = document.getElementById('addY').value;
             const data = document.getElementById('addData').value;
             
-            if (!xValue || !yValue) {
+            if (xValue === '' || yValue === '') {
                 setStatus('❌ Please enter X and Y coordinates');
                 return;
             }
@@ -1068,7 +1068,7 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             const radiusValue = document.getElementById('searchRadius').value;
             const radius = parseFloat(radiusValue);
             
-            if (!radiusValue || isNaN(radius) || radius <= 0) {
+            if (radiusValue === '' || isNaN(radius) || radius <= 0) {
                 setStatus('❌ Please enter a valid radius');
                 return;
             }
