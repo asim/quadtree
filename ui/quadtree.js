@@ -471,3 +471,8 @@ function updatePointsList() {
 
 // Load points on startup
 loadAllPoints();
+
+// Auto-refresh every 2 seconds if configured
+if (config.autoRefresh) {
+    setInterval(loadAllPoints, config.refreshInterval || 2000);
+}

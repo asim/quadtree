@@ -23,6 +23,8 @@ type Config struct {
 	ShowDelete      bool   // Whether to show delete buttons
 	ReadOnly        bool   // If true, hide all mutation controls
 	PointLabel      string // Label for points (e.g., "Point", "Agent")
+	AutoRefresh     bool   // Whether to auto-refresh the view
+	RefreshInterval int    // Refresh interval in milliseconds (default 2000)
 	ExtraCSS        string // Additional CSS to inject
 	ExtraJS         string // Additional JS to inject
 }
@@ -45,15 +47,17 @@ func DefaultConfig() Config {
 // NetworkConfig returns configuration suitable for network visualization
 func NetworkConfig() Config {
 	return Config{
-		Title:          "Network View",
-		APIBase:        "",
-		PointsEndpoint: "/agents",
-		SearchEndpoint: "/nearby",
-		ShowAddPoint:   false,
-		ShowSearch:     true,
-		ShowDelete:     false,
-		ReadOnly:       true,
-		PointLabel:     "Agent",
+		Title:           "Network View",
+		APIBase:         "",
+		PointsEndpoint:  "/agents",
+		SearchEndpoint:  "/nearby",
+		ShowAddPoint:    false,
+		ShowSearch:      true,
+		ShowDelete:      false,
+		ReadOnly:        true,
+		PointLabel:      "Agent",
+		AutoRefresh:     true,
+		RefreshInterval: 2000,
 	}
 }
 
