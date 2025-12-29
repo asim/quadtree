@@ -463,7 +463,7 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             width: 140px;
         }
         #searchRadius {
-            width: 80px;
+            width: 90px;
         }
         button {
             cursor: pointer;
@@ -472,7 +472,7 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             color: #4a5568;
             white-space: nowrap;
             font-weight: 500;
-            padding: 0.5rem 1rem;
+            padding: 0.5rem 0.875rem;
         }
         button:hover {
             background: #f7fafc;
@@ -655,13 +655,13 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
                 background: #ffffff;
                 border: 1px solid #e2e8f0;
                 color: #718096;
-                font-size: 1.25rem;
-                width: 32px;
-                height: 32px;
+                font-size: 0.875rem;
+                padding: 0.5rem 0.875rem;
                 border-radius: 6px;
                 cursor: pointer;
                 align-items: center;
                 justify-content: center;
+                font-weight: 500;
             }
             .close-sidebar:hover {
                 background: #fff5f5;
@@ -708,7 +708,7 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
                 width: 100%;
             }
             .sidebar button {
-                width: 100%;
+                width: auto;
                 padding: 0.625rem 1rem;
                 font-size: 0.875rem;
             }
@@ -754,7 +754,7 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <h2>Controls & Points</h2>
-                <button class="close-sidebar" onclick="toggleSidebar()" aria-label="Close menu">×</button>
+                <button class="close-sidebar" onclick="toggleSidebar()" aria-label="Close menu">Close</button>
             </div>
             
             <div class="info-section">
