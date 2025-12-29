@@ -675,22 +675,18 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             .sidebar .controls {
                 display: flex;
                 flex-direction: column;
-                gap: 0.75rem;
+                gap: 0.5rem;
                 margin-bottom: 1.5rem;
                 align-items: stretch;
             }
             .sidebar .control-group {
-                flex-direction: column;
-                align-items: stretch;
+                flex-direction: row;
+                align-items: center;
                 width: 100%;
                 gap: 0.5rem;
             }
             .sidebar .control-group span {
-                font-size: 0.75rem;
-                color: #718096;
-                text-transform: uppercase;
-                font-weight: 600;
-                letter-spacing: 0.05em;
+                display: none;
             }
             .sidebar .xy-inputs {
                 display: flex;
@@ -702,15 +698,16 @@ func serveIndex(w http.ResponseWriter, r *http.Request) {
             .sidebar input {
                 width: 100%;
                 font-size: 0.875rem;
-                padding: 0.625rem 0.75rem;
+                padding: 0.5rem 0.625rem;
             }
             .sidebar input[type="text"] {
                 width: 100%;
             }
             .sidebar button {
                 width: auto;
-                padding: 0.625rem 1rem;
+                padding: 0.5rem 0.75rem;
                 font-size: 0.875rem;
+                white-space: nowrap;
             }
             .status {
                 bottom: 1rem;
