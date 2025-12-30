@@ -469,7 +469,24 @@ function updatePointsList() {
     }).join('');
 }
 
+// Parse URL parameters for initial view
+function parseUrlParams() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('x')) viewX = parseFloat(params.get('x')) || 0;
+    if (params.has('y')) viewY = parseFloat(params.get('y')) || 0;
+    if (params.has('zoom')) zoom = parseFloat(params.get('zoom')) || 1;
+    if (params.has('focus')) {
+        // Focus on a point by name after loading
+        const focusName = params.get('focus');
+        setTimeout(() => {
+            const point = points.find(p => p.name === focusName || p.id === focusName);
+            if (point) focusPoint(point);
+        }, 500);
+    }
+}
+
 // Load points on startup
+parseUrlParams();
 loadAllPoints();
 
 // Auto-refresh every 2 seconds if configured
