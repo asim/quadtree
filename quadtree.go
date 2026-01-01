@@ -187,133 +187,63 @@ func (qt *QuadTree) divide() {
 	qt.points = nil
 }
 
-// distance calculates haversine distance between two points in meters
-// Points are assumed to be (lat, lon) in degrees
 func distance(a, b *Point) float64 {
-	const earthRadius = 6371000 // meters
-
-	lat1 := deg2Rad(a.x)
-	lat2 := deg2Rad(b.x)
-	dLat := deg2Rad(b.x - a.x)
-	dLon := deg2Rad(b.y - a.y)
-
-	sinLat := math.Sin(dLat / 2)
-	sinLon := math.Sin(dLon / 2)
-
-	h := sinLat*sinLat + math.Cos(lat1)*math.Cos(lat2)*sinLon*sinLon
-	c := 2 * math.Atan2(math.Sqrt(h), math.Sqrt(1-h))
-
-	return earthRadius * c
+	dx := a.x - b.x
+	dy := a.y - b.y
+	return math.Sqrt(dx*dx + dy*dy)
 }
 
-// collectPoints gathers all candidate points from the tree within the AABB
-// without sorting or deduplicating - that happens once at the end
-func (qt *QuadTree) collectPoints(a *AABB, visited map[*QuadTree]bool, fn filter, results map[*Point]struct{}) {
-	if visited[qt] {
-		return
+func (qt *QuadTree) knearest(a *AABB, i int, v map[*QuadTree]bool, fn filter) []*Point {
+	var results []*Point
+
+	if _, ok := v[qt]; ok {
+		return results
+	} else {
+		v[qt] = true
 	}
-	visited[qt] = true
 
 	if !qt.boundary.Intersect(a) {
-		return
+		return results
 	}
 
-	// Collect points from this node
 	for _, p := range qt.points {
 		if a.ContainsPoint(p) {
 			if fn == nil || fn(p) {
-				results[p] = struct{}{}
+				results = append(results, p)
 			}
 		}
 	}
 
-	// Recurse into children
 	if qt.nodes[0] != nil {
 		for _, node := range qt.nodes {
-			node.collectPoints(a, visited, fn, results)
+			results = append(results, node.knearest(a, i, v, fn)...)
 		}
 	}
 
-	// Recurse to parent (for leaf-first search)
 	if qt.parent != nil {
-		qt.parent.collectPoints(a, visited, fn, results)
-	}
-}
-
-// pointWithDist holds a point and its precomputed distance
-type pointWithDist struct {
-	point *Point
-	dist  float64
-}
-
-// KNearest returns the k nearest points within the QuadTree that fall within
-// the bounds of the axis aligned bounding box. A filter function can be used
-// which is evaluated against each point.
-func (qt *QuadTree) KNearest(a *AABB, k int, fn filter) []*Point {
-	// Collect all candidate points (deduplicated via map)
-	visited := make(map[*QuadTree]bool)
-	candidates := make(map[*Point]struct{})
-	
-	// Start from root and collect all matching points
-	qt.collectFromRoot(a, visited, fn, candidates)
-
-	if len(candidates) == 0 {
-		return nil
+		results = append(results, qt.parent.knearest(a, i, v, fn)...)
 	}
 
-	// Convert to slice with precomputed distances
+	// Deduplicate points
+	unique := make(map[*Point]struct{})
+	var deduped []*Point
+	for _, p := range results {
+		if _, seen := unique[p]; !seen {
+			unique[p] = struct{}{}
+			deduped = append(deduped, p)
+		}
+	}
+
+	// Sort by distance to the center of the query AABB
 	center := a.center
-	points := make([]pointWithDist, 0, len(candidates))
-	for p := range candidates {
-		points = append(points, pointWithDist{
-			point: p,
-			dist:  distance(p, center),
-		})
-	}
-
-	// Sort once by distance
-	sort.Slice(points, func(i, j int) bool {
-		return points[i].dist < points[j].dist
+	sort.Slice(deduped, func(i, j int) bool {
+		return distance(deduped[i], center) < distance(deduped[j], center)
 	})
 
-	// Return top k
-	if len(points) > k {
-		points = points[:k]
+	if len(deduped) > i {
+		deduped = deduped[:i]
 	}
-
-	result := make([]*Point, len(points))
-	for i, p := range points {
-		result[i] = p.point
-	}
-	return result
-}
-
-// collectFromRoot traverses from root down, collecting all points in AABB
-func (qt *QuadTree) collectFromRoot(a *AABB, visited map[*QuadTree]bool, fn filter, results map[*Point]struct{}) {
-	if visited[qt] {
-		return
-	}
-	visited[qt] = true
-
-	if !qt.boundary.Intersect(a) {
-		return
-	}
-
-	// Collect points from this node
-	for _, p := range qt.points {
-		if a.ContainsPoint(p) {
-			if fn == nil || fn(p) {
-				results[p] = struct{}{}
-			}
-		}
-	}
-
-	// Recurse into children
-	if qt.nodes[0] != nil {
-		for _, node := range qt.nodes {
-			node.collectFromRoot(a, visited, fn, results)
-		}
-	}
+	return deduped
 }
 
 // Insert will attempt to insert the point into the QuadTree. It will
@@ -346,6 +276,49 @@ func (qt *QuadTree) Insert(p *Point) bool {
 	}
 
 	return false
+}
+
+// KNearest returns the k nearest points within the QuadTree that fall within
+// the bounds of the axis aligned bounding box. A filter function can be used
+// which is evaluated against each point. The search begins at the leaf and
+// recurses towards the parent until k nearest have been found or root node is
+// hit.
+func (qt *QuadTree) kNearestRoot(a *AABB, i int, v map[*QuadTree]bool, fn filter) []*Point {
+	var results []*Point
+
+	if !qt.boundary.Intersect(a) {
+		return results
+	}
+
+	// hit the leaf
+	if qt.nodes[0] == nil {
+		results = append(results, qt.knearest(a, i, v, fn)...)
+
+		if len(results) >= i {
+			results = results[:i]
+		}
+
+		return results
+	}
+
+	for _, node := range qt.nodes {
+		results = append(results, node.kNearestRoot(a, i, v, fn)...)
+
+		if len(results) >= i {
+			return results[:i]
+		}
+	}
+
+	if len(results) >= i {
+		results = results[:i]
+	}
+
+	return results
+}
+
+func (qt *QuadTree) KNearest(a *AABB, i int, fn filter) []*Point {
+	v := make(map[*QuadTree]bool)
+	return qt.kNearestRoot(a, i, v, fn)
 }
 
 // Remove attemps to remove a point from the QuadTree. It will recurse until
