@@ -191,5 +191,10 @@ func (s *FileStore) persist() error {
 		return err
 	}
 	
-	return os.WriteFile(s.filename, data, 0644)
+	// Write to temp file first, then rename (atomic)
+	tmpFile := s.filename + ".tmp"
+	if err := os.WriteFile(tmpFile, data, 0644); err != nil {
+		return err
+	}
+	return os.Rename(tmpFile, s.filename)
 }
