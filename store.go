@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"sync"
+	"time"
 )
 
 // Store defines the interface for persisting quadtree points
@@ -86,18 +87,28 @@ func (s *MemoryStore) Close() error {
 	return nil
 }
 
-// FileStore persists points to a JSON file
+// FileStore persists points to a JSON file with batched async writes
 type FileStore struct {
-	mu       sync.RWMutex
-	filename string
-	points   map[string]*StoredPoint
+	mu        sync.RWMutex
+	filename  string
+	points    map[string]*StoredPoint
+	dirty     bool        // Has unsaved changes
+	saveTimer *time.Timer // Pending save timer
+	closeCh   chan struct{}
+	closed    bool
 }
 
-// NewFileStore creates a new file-based store
+const (
+	saveDelay    = 5 * time.Second  // Delay before persisting changes
+	maxSaveDelay = 30 * time.Second // Max time between saves if continuously dirty
+)
+
+// NewFileStore creates a new file-based store with batched writes
 func NewFileStore(filename string) (*FileStore, error) {
 	store := &FileStore{
 		filename: filename,
 		points:   make(map[string]*StoredPoint),
+		closeCh:  make(chan struct{}),
 	}
 	
 	// Try to load existing data
@@ -108,10 +119,52 @@ func NewFileStore(filename string) (*FileStore, error) {
 		}
 	}
 	
+	// Start background saver
+	go store.backgroundSaver()
+	
 	return store, nil
 }
 
-// Save stores a point to the file
+// backgroundSaver periodically saves dirty data
+func (s *FileStore) backgroundSaver() {
+	ticker := time.NewTicker(maxSaveDelay)
+	defer ticker.Stop()
+	
+	for {
+		select {
+		case <-s.closeCh:
+			return
+		case <-ticker.C:
+			s.flushIfDirty()
+		}
+	}
+}
+
+// flushIfDirty saves to disk if there are pending changes
+func (s *FileStore) flushIfDirty() {
+	s.mu.Lock()
+	if !s.dirty {
+		s.mu.Unlock()
+		return
+	}
+	// Make a copy of points while holding lock
+	pointsCopy := make(map[string]*StoredPoint, len(s.points))
+	for k, v := range s.points {
+		pointsCopy[k] = v
+	}
+	s.dirty = false
+	s.mu.Unlock()
+	
+	// Persist without holding lock
+	if err := persistPoints(s.filename, pointsCopy); err != nil {
+		// Mark dirty again so we retry
+		s.mu.Lock()
+		s.dirty = true
+		s.mu.Unlock()
+	}
+}
+
+// Save stores a point (non-blocking, batched to disk)
 func (s *FileStore) Save(id string, point *Point) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -123,8 +176,17 @@ func (s *FileStore) Save(id string, point *Point) error {
 		Y:    y,
 		Data: point.Data(),
 	}
+	s.dirty = true
 	
-	return s.persist()
+	// Schedule a save after delay (debounced)
+	if s.saveTimer != nil {
+		s.saveTimer.Stop()
+	}
+	s.saveTimer = time.AfterFunc(saveDelay, func() {
+		s.flushIfDirty()
+	})
+	
+	return nil
 }
 
 // Load retrieves a point from the file store
@@ -146,7 +208,8 @@ func (s *FileStore) Delete(id string) error {
 	defer s.mu.Unlock()
 	
 	delete(s.points, id)
-	return s.persist()
+	s.dirty = true
+	return nil
 }
 
 // List returns all points from the file store
@@ -161,11 +224,27 @@ func (s *FileStore) List() (map[string]*Point, error) {
 	return points, nil
 }
 
-// Close saves the store and performs cleanup
+// Close saves any pending changes and stops background saver
 func (s *FileStore) Close() error {
 	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.persist()
+	if s.closed {
+		s.mu.Unlock()
+		return nil
+	}
+	s.closed = true
+	if s.saveTimer != nil {
+		s.saveTimer.Stop()
+	}
+	close(s.closeCh)
+	
+	// Final save
+	pointsCopy := make(map[string]*StoredPoint, len(s.points))
+	for k, v := range s.points {
+		pointsCopy[k] = v
+	}
+	s.mu.Unlock()
+	
+	return persistPoints(s.filename, pointsCopy)
 }
 
 // load reads the points from the file
@@ -184,17 +263,17 @@ func (s *FileStore) load() error {
 	return nil
 }
 
-// persist writes the points to the file
-func (s *FileStore) persist() error {
-	data, err := json.MarshalIndent(s.points, "", "  ")
+// persistPoints writes points to file (does not hold any locks)
+func persistPoints(filename string, points map[string]*StoredPoint) error {
+	data, err := json.MarshalIndent(points, "", "  ")
 	if err != nil {
 		return err
 	}
 	
 	// Write to temp file first, then rename (atomic)
-	tmpFile := s.filename + ".tmp"
+	tmpFile := filename + ".tmp"
 	if err := os.WriteFile(tmpFile, data, 0644); err != nil {
 		return err
 	}
-	return os.Rename(tmpFile, s.filename)
+	return os.Rename(tmpFile, filename)
 }
