@@ -46,12 +46,12 @@ func NewHTTPHandler(tree *QuadTree, store Store) *HTTPHandler {
 		points:    make(map[string]*Point),
 		pointToID: make(map[*Point]string),
 	}
-	
+
 	// Load existing points from store
 	if store != nil {
 		h.loadFromStore()
 	}
-	
+
 	return h
 }
 
@@ -60,10 +60,10 @@ func (h *HTTPHandler) loadFromStore() {
 	if err != nil {
 		return
 	}
-	
+
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	
+
 	for id, point := range storedPoints {
 		if h.tree.Insert(point) {
 			h.points[id] = point
@@ -75,23 +75,23 @@ func (h *HTTPHandler) loadFromStore() {
 // ServeHTTP handles /points and /points/{id} and /search
 func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
-	
+
 	if path == "/points" || path == "/points/" {
 		h.handlePoints(w, r)
 		return
 	}
-	
+
 	if strings.HasPrefix(path, "/points/") {
 		id := strings.TrimPrefix(path, "/points/")
 		h.handlePointByID(w, r, id)
 		return
 	}
-	
+
 	if path == "/search" {
 		h.handleSearch(w, r)
 		return
 	}
-	
+
 	http.NotFound(w, r)
 }
 
@@ -119,18 +119,18 @@ func (h *HTTPHandler) addPoint(w http.ResponseWriter, r *http.Request) {
 	for i := h.idCounter / 10; i > 0; i /= 10 {
 		id = string(rune('0'+i%10)) + id
 	}
-	
+
 	point := NewPoint(req.X, req.Y, req.Data)
-	
+
 	if !h.tree.Insert(point) {
 		h.mu.Unlock()
 		http.Error(w, "Failed to insert point", http.StatusBadRequest)
 		return
 	}
-	
+
 	h.points[id] = point
 	h.pointToID[point] = id
-	
+
 	if h.store != nil {
 		h.store.Save(id, point)
 	}
@@ -200,11 +200,11 @@ func (h *HTTPHandler) deletePoint(w http.ResponseWriter, id string) {
 	h.tree.Remove(point)
 	delete(h.points, id)
 	delete(h.pointToID, point)
-	
+
 	if h.store != nil {
 		h.store.Delete(id)
 	}
-	
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -251,7 +251,7 @@ func (h *HTTPHandler) handleSearch(w http.ResponseWriter, r *http.Request) {
 func (h *HTTPHandler) Points() map[string]*Point {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-	
+
 	result := make(map[string]*Point, len(h.points))
 	for k, v := range h.points {
 		result[k] = v

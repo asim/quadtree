@@ -55,11 +55,11 @@ func TestKNearestEdgeCases(t *testing.T) {
 	qt := New(NewAABB(center, half), 0, nil)
 
 	points := []*Point{
-		NewPoint(1, 0, "a"),   // 1
-		NewPoint(-1, 0, "b"),  // 1
-		NewPoint(0, 1, "c"),   // 1
-		NewPoint(0, -1, "d"),  // 1
-		NewPoint(5, 5, "e"),   // sqrt(50)
+		NewPoint(1, 0, "a"),  // 1
+		NewPoint(-1, 0, "b"), // 1
+		NewPoint(0, 1, "c"),  // 1
+		NewPoint(0, -1, "d"), // 1
+		NewPoint(5, 5, "e"),  // sqrt(50)
 	}
 	for _, p := range points {
 		qt.Insert(p)

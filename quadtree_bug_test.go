@@ -38,7 +38,7 @@ func TestInsertRemoveInsert(t *testing.T) {
 	queryCenter := NewPoint(51.4179, -0.3706, nil) // ~240m away
 	queryHalf := queryCenter.HalfPoint(500)        // 500m radius
 	queryBox := NewAABB(queryCenter, queryHalf)
-	
+
 	results := tree.KNearest(queryBox, 10, nil)
 	found := false
 	for _, r := range results {
@@ -84,7 +84,7 @@ func TestInsertRemoveInsert(t *testing.T) {
 	}
 	if !found2 {
 		t.Errorf("After Remove+Insert, KNearest didn't find point2 (got %d results)", len(results2))
-		
+
 		// Debug: what DID we find?
 		t.Logf("Results found:")
 		for i, r := range results2 {
@@ -117,7 +117,7 @@ func TestInsertRemoveInsert(t *testing.T) {
 			}
 		}
 		if !found {
-			t.Errorf("Cycle %d: KNearest can't find point (tree count: %d, DebugFind: %v)", 
+			t.Errorf("Cycle %d: KNearest can't find point (tree count: %d, DebugFind: %v)",
 				cycle, tree.Count(), tree.DebugFind(targetLat, targetLon))
 		}
 	}

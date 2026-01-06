@@ -73,7 +73,7 @@ func (s *MemoryStore) Delete(id string) error {
 func (s *MemoryStore) List() (map[string]*Point, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
+
 	// Return a copy to avoid concurrent modification
 	points := make(map[string]*Point, len(s.points))
 	for id, point := range s.points {
@@ -110,7 +110,7 @@ func NewFileStore(filename string) (*FileStore, error) {
 		points:   make(map[string]*StoredPoint),
 		closeCh:  make(chan struct{}),
 	}
-	
+
 	// Try to load existing data
 	if err := store.load(); err != nil {
 		// If file doesn't exist, that's ok
@@ -118,10 +118,10 @@ func NewFileStore(filename string) (*FileStore, error) {
 			return nil, err
 		}
 	}
-	
+
 	// Start background saver
 	go store.backgroundSaver()
-	
+
 	return store, nil
 }
 
@@ -129,7 +129,7 @@ func NewFileStore(filename string) (*FileStore, error) {
 func (s *FileStore) backgroundSaver() {
 	ticker := time.NewTicker(maxSaveDelay)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-s.closeCh:
@@ -154,7 +154,7 @@ func (s *FileStore) flushIfDirty() {
 	}
 	s.dirty = false
 	s.mu.Unlock()
-	
+
 	// Persist without holding lock
 	if err := persistPoints(s.filename, pointsCopy); err != nil {
 		// Mark dirty again so we retry
@@ -168,7 +168,7 @@ func (s *FileStore) flushIfDirty() {
 func (s *FileStore) Save(id string, point *Point) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	x, y := point.Coordinates()
 	s.points[id] = &StoredPoint{
 		ID:   id,
@@ -177,7 +177,7 @@ func (s *FileStore) Save(id string, point *Point) error {
 		Data: point.Data(),
 	}
 	s.dirty = true
-	
+
 	// Schedule a save after delay (debounced)
 	if s.saveTimer != nil {
 		s.saveTimer.Stop()
@@ -185,7 +185,7 @@ func (s *FileStore) Save(id string, point *Point) error {
 	s.saveTimer = time.AfterFunc(saveDelay, func() {
 		s.flushIfDirty()
 	})
-	
+
 	return nil
 }
 
@@ -193,12 +193,12 @@ func (s *FileStore) Save(id string, point *Point) error {
 func (s *FileStore) Load(id string) (*Point, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
+
 	stored, exists := s.points[id]
 	if !exists {
 		return nil, nil
 	}
-	
+
 	return NewPoint(stored.X, stored.Y, stored.Data), nil
 }
 
@@ -206,7 +206,7 @@ func (s *FileStore) Load(id string) (*Point, error) {
 func (s *FileStore) Delete(id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	delete(s.points, id)
 	s.dirty = true
 	return nil
@@ -216,7 +216,7 @@ func (s *FileStore) Delete(id string) error {
 func (s *FileStore) List() (map[string]*Point, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
+
 	points := make(map[string]*Point, len(s.points))
 	for id, stored := range s.points {
 		points[id] = NewPoint(stored.X, stored.Y, stored.Data)
@@ -236,14 +236,14 @@ func (s *FileStore) Close() error {
 		s.saveTimer.Stop()
 	}
 	close(s.closeCh)
-	
+
 	// Final save
 	pointsCopy := make(map[string]*StoredPoint, len(s.points))
 	for k, v := range s.points {
 		pointsCopy[k] = v
 	}
 	s.mu.Unlock()
-	
+
 	return persistPoints(s.filename, pointsCopy)
 }
 
@@ -253,12 +253,12 @@ func (s *FileStore) load() error {
 	if err != nil {
 		return err
 	}
-	
+
 	var points map[string]*StoredPoint
 	if err := json.Unmarshal(data, &points); err != nil {
 		return err
 	}
-	
+
 	s.points = points
 	return nil
 }
@@ -269,7 +269,7 @@ func persistPoints(filename string, points map[string]*StoredPoint) error {
 	if err != nil {
 		return err
 	}
-	
+
 	// Write to temp file first, then rename (atomic)
 	tmpFile := filename + ".tmp"
 	if err := os.WriteFile(tmpFile, data, 0644); err != nil {

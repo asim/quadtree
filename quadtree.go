@@ -461,14 +461,14 @@ func (qt *QuadTree) DebugFind(x, y float64) bool {
 	if !qt.boundary.ContainsPoint(&Point{x, y, nil}) {
 		return false
 	}
-	
+
 	for _, p := range qt.points {
 		px, py := p.Coordinates()
 		if px == x && py == y {
 			return true
 		}
 	}
-	
+
 	if qt.nodes[0] != nil {
 		for _, node := range qt.nodes {
 			if node.DebugFind(x, y) {
