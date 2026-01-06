@@ -57,7 +57,7 @@ func NetworkConfig() Config {
 		ReadOnly:        true,
 		PointLabel:      "Agent",
 		AutoRefresh:     true,
-		RefreshInterval: 2000,
+		RefreshInterval: 10000,
 	}
 }
 

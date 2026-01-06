@@ -426,7 +426,7 @@ async function loadAllPoints() {
             points = await response.json();
             updatePointsList();
             draw();
-            setStatus('✓ Loaded ' + points.length + ' ' + config.pointLabel.toLowerCase() + (points.length !== 1 ? 's' : ''));
+            // setStatus('✓ Loaded ' + points.length + ' ' + config.pointLabel.toLowerCase() + (points.length !== 1 ? 's' : ''));
         } else {
             setStatus('❌ Failed to load ' + config.pointLabel.toLowerCase() + 's');
         }

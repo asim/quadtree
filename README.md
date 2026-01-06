@@ -39,9 +39,34 @@ for _, point := range qtree.KNearest(bounds, maxPoints, nil) {
 }
 ```
 
-## HTTP Server
+## HTTP Handler
 
-A web-based HTTP server with REST API and interactive UI is available for managing and visualizing points.
+Embed the quadtree HTTP API in your application:
+
+```go
+import "github.com/asim/quadtree"
+
+// Create quadtree and store
+tree := quadtree.New(bounds, 0, nil)
+store, _ := quadtree.NewFileStore("data.json")
+
+// Create HTTP handler
+handler := quadtree.NewHTTPHandler(tree, store)
+
+// Mount at /api prefix
+http.Handle("/api/", http.StripPrefix("/api", handler))
+```
+
+Endpoints:
+- `GET /points` - List all points
+- `POST /points` - Add a point `{"x": 51.5, "y": -0.1, "data": "London"}`
+- `GET /points/{id}` - Get a point
+- `DELETE /points/{id}` - Delete a point  
+- `POST /search` - Search region `{"center": [51.5, -0.1], "radius": 10}`
+
+## Standalone Server
+
+A standalone HTTP server with REST API and interactive UI is available for managing and visualizing points.
 
 ![QuadTree Viewer](https://github.com/user-attachments/assets/f7f3f3a6-ff29-4a7e-86ed-9dccd579e067)
 
@@ -61,7 +86,7 @@ See [cmd/server/README.md](./cmd/server/README.md) for full API documentation an
 
 ## Reusable UI Package
 
-The visualization UI is available as a separate package for embedding in other applications:
+The visualization UI is available as a subpackage for embedding in other applications:
 
 ```go
 import "github.com/asim/quadtree/ui"
@@ -82,14 +107,37 @@ cfg := ui.Config{
     ShowDelete:     false,
     ReadOnly:       true,
     PointLabel:     "Item",
+    AutoRefresh:    true,
+    RefreshInterval: 5000, // milliseconds
 }
 http.Handle("/view", ui.Handler(cfg))
+
+// Serve static assets (CSS, JS)
+http.Handle("/quadtree.css", http.FileServer(http.FS(ui.FS())))
+http.Handle("/quadtree.js", http.FileServer(http.FS(ui.FS())))
 ```
+
+### Expected API Format
+
+The UI expects your API endpoints to return points in this format:
+
+```json
+[
+  {"id": "1", "x": 51.5, "y": -0.1, "name": "London", "data": {"type": "city"}},
+  {"id": "2", "x": 48.8, "y": 2.3, "name": "Paris", "data": {"type": "city"}}
+]
+```
+
+- `id` - unique identifier
+- `x`, `y` - coordinates (lat/lon for geo data)
+- `name` - display label (falls back to `data` if not present)
+- `data` - optional metadata object
 
 The UI supports:
 - Pan/zoom with mouse, touch, and keyboard
 - Grid overlay with dynamic scaling
-- Point display with optional radius circles
+- Point display with labels
+- Auto-refresh for live data
 - Mobile-responsive design
 - Configurable controls and labels
 
