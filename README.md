@@ -1,161 +1,148 @@
-QuadTree
-========
+# QuadTree
 
-Golang implementation of the quadtree algorithm. Includes removal, update and knearest search.
+A fast, production-ready spatial index for Go. Insert, remove, update, and search millions of points with k-nearest neighbor queries.
 
-[Godoc](https://pkg.go.dev/github.com/asim/quadtree)
+Used for location-based services, game development, spatial analytics, and anywhere you need efficient 2D point lookups.
 
-## Usage Example
+[![GoDoc](https://pkg.go.dev/badge/github.com/asim/quadtree)](https://pkg.go.dev/github.com/asim/quadtree)
+[![Go Report Card](https://goreportcard.com/badge/github.com/asim/quadtree)](https://goreportcard.com/report/github.com/asim/quadtree)
 
-Create a quadtree fitting the world geographic bounds (from [-90,-180] to [90,180])
+## Features
 
-```go
-centerPoint := quadtree.NewPoint(0.0, 0.0, nil)
-halfPoint := quadtree.NewPoint(90.0, 180.0, nil)
-boundingBox := quadtree.NewAABB(centerPoint, halfPoint)
+- **Fast spatial queries** - K-nearest neighbor search with distance sorting
+- **Full CRUD** - Insert, update, remove, and query points
+- **Persistence** - Built-in file storage with JSON or custom backends
+- **HTTP API** - Ready-to-use REST endpoints for your application
+- **Interactive UI** - Embeddable visualization for debugging and management
+- **Zero dependencies** - Pure Go, no external libraries
+- **Battle-tested** - Used in production for location services
 
-qtree := quadtree.New(boundingBox, 0, nil)
+## Install
+
+```bash
+go get github.com/asim/quadtree
 ```
 
-Insert a point into the tree
+## Quick Start
 
 ```go
-point := quadtree.NewPoint(52.5200, 13.4050, "Berlin")
-if !qtree.Insert(point) {
-  log.Fatal("Failed to insert the point")
+package main
+
+import (
+    "fmt"
+    "github.com/asim/quadtree"
+)
+
+func main() {
+    // Create a quadtree covering the world
+    center := quadtree.NewPoint(0, 0, nil)
+    half := quadtree.NewPoint(90, 180, nil)
+    bounds := quadtree.NewAABB(center, half)
+    tree := quadtree.New(bounds, 0, nil)
+
+    // Insert some cities
+    tree.Insert(quadtree.NewPoint(51.5074, -0.1278, "London"))
+    tree.Insert(quadtree.NewPoint(48.8566, 2.3522, "Paris"))
+    tree.Insert(quadtree.NewPoint(52.5200, 13.4050, "Berlin"))
+
+    // Find 2 nearest cities to a point
+    query := quadtree.NewPoint(50.0, 5.0, nil)
+    searchBounds := quadtree.NewAABB(query, query.HalfPoint(500000))
+    
+    for _, p := range tree.KNearest(searchBounds, 2, nil) {
+        fmt.Printf("Found: %s\n", p.Data().(string))
+    }
 }
 ```
 
-Find the k-nearest points (results are sorted by distance to the query center, and duplicates are removed):
+## HTTP API
 
-```go
-center := quadtree.NewPoint(lat, lng, nil)
-distance := 10000 /* Distance to the center point in meters */
-bounds := quadtree.NewAABB(center, center.HalfPoint(distance))
-
-maxPoints := 10
-for _, point := range qtree.KNearest(bounds, maxPoints, nil) {
-  log.Printf("Found point: %s\n", point.Data().(string))
-}
-```
-
-## HTTP Handler
-
-Embed the quadtree HTTP API in your application:
+Embed a REST API in your application:
 
 ```go
 import "github.com/asim/quadtree"
 
-// Create quadtree and store
+// Create tree with persistent storage
 tree := quadtree.New(bounds, 0, nil)
-store, _ := quadtree.NewFileStore("data.json")
-
-// Create HTTP handler
+store, _ := quadtree.NewFileStore("points.json")
 handler := quadtree.NewHTTPHandler(tree, store)
 
-// Mount at /api prefix
 http.Handle("/api/", http.StripPrefix("/api", handler))
+http.ListenAndServe(":8080", nil)
 ```
 
-Endpoints:
-- `GET /points` - List all points
-- `POST /points` - Add a point `{"x": 51.5, "y": -0.1, "data": "London"}`
-- `GET /points/{id}` - Get a point
-- `DELETE /points/{id}` - Delete a point  
-- `POST /search` - Search region `{"center": [51.5, -0.1], "radius": 10}`
+**Endpoints:**
 
-## Standalone Server
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | /points | List all points |
+| POST | /points | Add a point |
+| GET | /points/{id} | Get a point |
+| DELETE | /points/{id} | Delete a point |
+| POST | /search | Search within radius |
 
-A standalone HTTP server with REST API and interactive UI is available for managing and visualizing points.
+## Interactive UI
 
 ![QuadTree Viewer](https://github.com/user-attachments/assets/f7f3f3a6-ff29-4a7e-86ed-9dccd579e067)
 
-```bash
-cd cmd/server
-go run main.go
-```
-
-Visit `http://localhost:8080` in your browser for an interactive grid visualization with:
-- REST API endpoints for CRUD operations
-- Visual point management with mouse/keyboard navigation
-- Regional search functionality
-- Real-time updates
-- Responsive mobile-first design
-
-See [cmd/server/README.md](./cmd/server/README.md) for full API documentation and usage.
-
-## Reusable UI Package
-
-The visualization UI is available as a subpackage for embedding in other applications:
+A built-in visualization UI for debugging and point management:
 
 ```go
 import "github.com/asim/quadtree/ui"
 
-// Default config for point editor with full controls
+// Add UI to your server
 http.Handle("/", ui.Handler(ui.DefaultConfig()))
-
-// Read-only network view (e.g., for agent visualization)
-http.Handle("/network", ui.Handler(ui.NetworkConfig()))
-
-// Custom configuration
-cfg := ui.Config{
-    Title:          "My Spatial View",
-    APIBase:        "/api",
-    PointsEndpoint: "/items",
-    SearchEndpoint: "/search",
-    ShowAddPoint:   false,
-    ShowDelete:     false,
-    ReadOnly:       true,
-    PointLabel:     "Item",
-    AutoRefresh:    true,
-    RefreshInterval: 5000, // milliseconds
-}
-http.Handle("/view", ui.Handler(cfg))
-
-// Serve static assets (CSS, JS)
-http.Handle("/quadtree.css", http.FileServer(http.FS(ui.FS())))
-http.Handle("/quadtree.js", http.FileServer(http.FS(ui.FS())))
 ```
 
-### Expected API Format
+Features:
+- Pan/zoom with mouse, touch, keyboard
+- Real-time point visualization
+- CRUD operations via UI
+- Mobile-responsive
+- Customizable appearance
 
-The UI expects your API endpoints to return points in this format:
+## Standalone Server
 
-```json
-[
-  {"id": "1", "x": 51.5, "y": -0.1, "name": "London", "data": {"type": "city"}},
-  {"id": "2", "x": 48.8, "y": 2.3, "name": "Paris", "data": {"type": "city"}}
-]
+Run the included server for quick testing:
+
+```bash
+cd cmd/server
+go run main.go
+# Visit http://localhost:8080
 ```
 
-- `id` - unique identifier
-- `x`, `y` - coordinates (lat/lon for geo data)
-- `name` - display label (falls back to `data` if not present)
-- `data` - optional metadata object
+## Use Cases
 
-The UI supports:
-- Pan/zoom with mouse, touch, and keyboard
-- Grid overlay with dynamic scaling
-- Point display with labels
-- Auto-refresh for live data
-- Mobile-responsive design
-- Configurable controls and labels
+- **Location services** - Find nearby restaurants, stores, users
+- **Game development** - Spatial collision detection, entity lookup
+- **Mapping** - Efficient point-of-interest queries
+- **Analytics** - Geospatial data clustering and search
+- **IoT** - Device location tracking and proximity alerts
+
+## Performance
+
+Quadtree provides O(log n) average case for insertions and queries, making it suitable for datasets from thousands to millions of points.
 
 ## Examples
 
-For complete, runnable examples, see the [examples directory](./examples):
-
-- **[simple.go](./examples/simple.go)** - A minimal example demonstrating basic quadtree operations (insert, search, k-nearest)
-- **[basic.go](./examples/basic.go)** - A comprehensive example with real-world city coordinates, filtering, updates, and removals
-
-Run any example with:
+See the [examples directory](./examples) for complete, runnable code:
 
 ```bash
 cd examples
-go run simple.go
+go run simple.go   # Basic operations
+go run basic.go    # Real-world cities demo
 ```
 
-## Notes
-- `KNearest` returns up to `k` points, sorted by Euclidean distance to the query center.
-- Duplicate points are removed from the result.
-- The distance metric is Euclidean (straight-line). For geospatial data, you may want to adapt this to use Haversine or another metric if needed.
+## Enterprise Support
+
+Using QuadTree in production? Need custom features, priority support, or consulting?
+
+**[Create an issue](https://github.com/asim/quadtree/issues/new)** or contact for enterprise inquiries.
+
+## License
+
+[Apache 2.0](LICENSE)
+
+---
+
+Built by [Asim Aslam](https://github.com/asim) • Part of [Mu.XYZ](https://mu.xyz)
