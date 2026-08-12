@@ -1,3 +1,5 @@
+
+
 # QuadTree
 
 A fast, production-ready spatial index for Go. Insert, remove, update, and search millions of points with k-nearest neighbor queries.
@@ -47,7 +49,7 @@ func main() {
 
     // Find 2 nearest cities to a point
     query := quadtree.NewPoint(50.0, 5.0, nil)
-    searchBounds := quadtree.NewAABB(query, query.HalfPoint(500000))
+    searchBounds := quadtree.NewAABB(query, query.HalfPoint(500000.0)) // 500 km radius in meters
     
     for _, p := range tree.KNearest(searchBounds, 2, nil) {
         fmt.Printf("Found: %s\n", p.Data().(string))
